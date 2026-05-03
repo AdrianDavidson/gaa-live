@@ -1,0 +1,24 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <!-- Full bleed green background (maskable icons must fill the entire square) -->
+  <rect width="512" height="512" fill="#006633"/>
+
+  <!-- Sliotar — smaller and centred within the 80% safe zone -->
+  <circle cx="256" cy="240" r="148" fill="white"/>
+
+  <!-- Sliotar seam — top S-curve -->
+  <path d="M 108 240 C 108 154, 190 192, 256 240 C 322 288, 404 326, 404 240"
+        fill="none" stroke="#006633" stroke-width="11" stroke-linecap="round"/>
+
+  <!-- Sliotar seam — bottom S-curve -->
+  <path d="M 108 240 C 108 326, 190 288, 256 240 C 322 192, 404 154, 404 240"
+        fill="none" stroke="#006633" stroke-width="11" stroke-linecap="round"/>
+
+  <!-- Gold ring -->
+  <circle cx="256" cy="240" r="148" fill="none" stroke="#FFD700" stroke-width="6"/>
+
+  <!-- "LIVE" text -->
+  <text x="256" y="450" text-anchor="middle"
+        font-family="system-ui, -apple-system, sans-serif"
+        font-weight="900" font-size="48" letter-spacing="8"
+        fill="#FFD700">LIVE</text>
+</svg>

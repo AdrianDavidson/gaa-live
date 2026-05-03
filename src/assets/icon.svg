@@ -1,0 +1,24 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <!-- Green background with rounded corners -->
+  <rect width="512" height="512" rx="96" fill="#006633"/>
+
+  <!-- Sliotar (hurling ball) — white circle -->
+  <circle cx="256" cy="256" r="178" fill="white"/>
+
+  <!-- Sliotar seam — top S-curve -->
+  <path d="M 78 256 C 78 148, 178 196, 256 256 C 334 316, 434 364, 434 256"
+        fill="none" stroke="#006633" stroke-width="13" stroke-linecap="round"/>
+
+  <!-- Sliotar seam — bottom S-curve (mirror) -->
+  <path d="M 78 256 C 78 364, 178 316, 256 256 C 334 196, 434 148, 434 256"
+        fill="none" stroke="#006633" stroke-width="13" stroke-linecap="round"/>
+
+  <!-- Gold ring around ball for premium feel -->
+  <circle cx="256" cy="256" r="178" fill="none" stroke="#FFD700" stroke-width="7"/>
+
+  <!-- "LIVE" text in gold at bottom -->
+  <text x="256" y="480" text-anchor="middle"
+        font-family="system-ui, -apple-system, sans-serif"
+        font-weight="900" font-size="52" letter-spacing="8"
+        fill="#FFD700">LIVE</text>
+</svg>
