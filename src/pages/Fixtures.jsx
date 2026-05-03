@@ -58,11 +58,18 @@ export default function Fixtures() {
               className="bg-white border border-gray-200 rounded-xl p-4 mb-3"
               aria-label={`${fixture.homeTeam} versus ${fixture.awayTeam}`}
             >
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-xs font-bold text-gray-400 uppercase tracking-wide">
-                  {fixture.competition}
-                </span>
-                <span className="text-xs text-gray-400">{formatMatchDate(fixture.startDate)}</span>
+              <div className="flex justify-between items-start mb-2">
+                <div>
+                  <span className="text-xs font-bold text-gray-400 uppercase tracking-wide">
+                    {fixture.competition}
+                  </span>
+                  {fixture.tvChannel && (
+                    <span className="ml-2 text-xs font-bold bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded">
+                      {fixture.tvChannel}
+                    </span>
+                  )}
+                </div>
+                <span className="text-xs text-gray-400 shrink-0 ml-2">{formatMatchDate(fixture.startDate)}</span>
               </div>
               <div className="flex items-center justify-between font-bold text-lg">
                 <span>{fixture.homeTeam}</span>

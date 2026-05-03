@@ -36,9 +36,16 @@ export default function ScoreCard({ fixture }) {
       aria-label={`${fixture.homeTeam} versus ${fixture.awayTeam}`}
     >
       <div className="flex justify-between items-center mb-3">
-        <span className="text-xs font-bold text-gray-400 uppercase tracking-wide">
-          {fixture.competition}
-        </span>
+        <div>
+          <span className="text-xs font-bold text-gray-400 uppercase tracking-wide">
+            {fixture.competition}
+          </span>
+          {fixture.tvChannel && (
+            <span className="ml-2 text-xs font-bold bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded">
+              {fixture.tvChannel}
+            </span>
+          )}
+        </div>
         <TierBadge tier={tier} />
       </div>
 
