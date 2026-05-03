@@ -3,6 +3,11 @@ import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
+  // In dev, /api/fixtures is not served by Vite — call TheSportsDB directly
+  // via the VITE_USE_DIRECT_API flag set in .env.development
+  server: {
+    port: 5173,
+  },
   plugins: [
     react(),
     VitePWA({

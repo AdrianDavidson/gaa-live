@@ -95,6 +95,35 @@ export default function Settings() {
         </button>
       </section>
 
+      {/* Foireann API — unlock full data */}
+      <section className="mb-6" aria-labelledby="foireann-heading">
+        <h2 id="foireann-heading" className="text-base font-bold text-gray-700 mb-3">
+          Unlock Full Hurling Data
+        </h2>
+        <div className="bg-green-50 border border-gaa-green rounded-xl p-4 space-y-3 text-sm text-gray-700">
+          <p>
+            <strong>Currently showing:</strong> All-Ireland SHC, Munster SHC, Leinster SHC,
+            Joe McDonagh Cup, Christy Ring Cup — sourced free from TheSportsDB.
+          </p>
+          <p>
+            <strong>To unlock:</strong> Under-20, Camogie, Allianz Hurling League, club
+            championships and all county competitions — apply for the <strong>Foireann Open Data API</strong>.
+          </p>
+          <div className="bg-white border border-green-200 rounded-lg p-3 text-xs text-gray-600">
+            <p className="font-bold text-gray-800 mb-1">How to apply (free)</p>
+            <ol className="space-y-1 list-decimal list-inside">
+              <li>You need to be a <strong>Club Administrator</strong> on Foireann (the GAA's club management system)</li>
+              <li>Go to <strong>gmssupport.zendesk.com</strong> and search "Open Data API Getting Started"</li>
+              <li>Submit a request — you'll receive 2 API keys by email</li>
+              <li>Add <code className="bg-gray-100 px-1 rounded">FOIREANN_API_KEY</code> to your Vercel environment variables</li>
+            </ol>
+          </div>
+          <p className="text-xs text-gray-500">
+            If you're not a club admin, ask your club secretary or county board — they can apply on your behalf.
+          </p>
+        </div>
+      </section>
+
       {/* About our data */}
       <section aria-labelledby="about-heading">
         <h2 id="about-heading" className="text-base font-bold text-gray-700 mb-3">
@@ -102,21 +131,24 @@ export default function Settings() {
         </h2>
         <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-3 text-sm text-gray-600">
           <p>
+            <strong className="text-gray-800">Fixtures &amp; Results</strong> — Sourced from
+            TheSportsDB (free, no key needed) for 5 senior hurling competitions.
+          </p>
+          <p>
+            <strong className="text-gray-800">Scores in G-P format</strong> — e.g. 1-18 means
+            1 goal (3 pts) + 18 points = 21 total. The winning score is shown in green.
+          </p>
+          <p>
             <strong className="text-gray-800">🟢 Free Stream</strong> — When a live YouTube
-            stream is found for a match, we show it right here in the app, free of charge.
+            stream is found for a match, tap Watch Free to view it in the app.
           </p>
           <p>
-            <strong className="text-gray-800">🟡 ~10 Min Updates</strong> — When no stream is
-            available, we check RTÉ Sport, BBC Sport, and HoganStand every 10 minutes for the
-            latest score. These are public RSS feeds designed for sharing.
-          </p>
-          <p>
-            <strong className="text-gray-800">⚫ No Live Data</strong> — Sometimes a result
-            simply isn't published yet. We'll keep checking and update as soon as it is.
+            <strong className="text-gray-800">🟡 ~10 Min Updates</strong> — RTÉ Sport, BBC Sport,
+            and HoganStand RSS feeds are checked every 10 minutes.
           </p>
           <p className="text-xs text-gray-400 pt-2 border-t border-gray-200">
-            GAA Live does not host video content. All streams are publicly available on YouTube.
-            Score data is sourced from public RSS feeds.
+            GAA Live does not host video. All streams link to public YouTube content.
+            Fixture data: TheSportsDB (CC). Results may lag by up to 15 minutes post-game.
           </p>
         </div>
       </section>
