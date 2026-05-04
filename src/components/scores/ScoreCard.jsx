@@ -44,7 +44,7 @@ export default function ScoreCard({ fixture }) {
     >
       <div className="flex justify-between items-center mb-3">
         <div className="flex items-center gap-1.5">
-          <CodeIcon code={fixture.code} size={13} className="text-gray-400 shrink-0" />
+          <CodeIcon code={fixture.code} size={13} className="shrink-0" />
           <span className="text-xs font-bold text-gray-400 uppercase tracking-wide">
             {fixture.competition}
           </span>

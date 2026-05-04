@@ -10,7 +10,6 @@ function cleanTeamName(raw) {
     .trim()
 }
 
-// Parse "1-18 (21)" into { gp: "1-18", total: 21 }
 function parseGAAScore(fragment) {
   if (!fragment) return null
   const m = fragment.match(/(\d+-\d+)\s*\((\d+)\)/)
@@ -18,7 +17,6 @@ function parseGAAScore(fragment) {
   return { gp: m[1], total: parseInt(m[2], 10) }
 }
 
-// Parse strResult "1-18 (21) 3-27 (36)" into home + away score objects
 function parseResult(strResult) {
   if (!strResult) return { home: null, away: null }
   const parts = strResult.match(/(\d+-\d+\s*\(\d+\))\s*(\d+-\d+\s*\(\d+\))/)
@@ -63,14 +61,14 @@ function normalizeEvent(event, competition) {
   }
 }
 
-async function fetchEvents(endpoint, competition) {
+async function fetchNextLeague(competition) {
   try {
-    const res  = await fetch(`${BASE}/${endpoint}?id=${competition.theSportsDbId}`)
+    const res  = await fetch(`${BASE}/eventsnextleague.php?id=${competition.theSportsDbId}`)
     const data = await res.json()
     if (!data?.events?.length) return []
     return data.events.map((e) => normalizeEvent(e, competition))
   } catch (err) {
-    console.error(`TheSportsDB fetch failed for ${competition.name}:`, err.message)
+    console.error(`TheSportsDB next-league fetch failed for ${competition.name}:`, err.message)
     return []
   }
 }
@@ -87,7 +85,6 @@ async function fetchSeasonEvents(competition, season) {
   }
 }
 
-// Probe to find which season year has data — tries current year then previous.
 async function detectActiveSeason(firstCompetition) {
   const year = new Date().getFullYear()
   for (const y of [year, year - 1]) {
@@ -100,29 +97,23 @@ async function detectActiveSeason(firstCompetition) {
   return String(year)
 }
 
-export async function fetchCompetitionResults(competition) {
-  return fetchEvents('eventspastleague.php', competition)
-}
-
-export async function fetchCompetitionFixtures(competition) {
-  return fetchEvents('eventsnextleague.php', competition)
-}
-
 export async function fetchAllGAAData(competitions) {
   const active = competitions.filter((c) => c.theSportsDbId !== null)
   if (!active.length) return { results: [], fixtures: [], season: null }
 
-  const season   = await detectActiveSeason(active[0])
-  const allEvents = await Promise.all(active.map((c) => fetchSeasonEvents(c, season)))
-  const flat      = allEvents.flat()
-  const now       = new Date()
+  const season = await detectActiveSeason(active[0])
 
-  const results  = flat
+  // Results: full season data via eventsseason
+  const seasonBatches = await Promise.all(active.map((c) => fetchSeasonEvents(c, season)))
+  const results = seasonBatches.flat()
     .filter((e) => e.status === 'finished')
     .sort((a, b) => new Date(b.startDate) - new Date(a.startDate))
 
-  const fixtures = flat
-    .filter((e) => e.status === 'upcoming' && new Date(e.startDate) > now)
+  // Fixtures: eventsnextleague is not season-bound so it catches cross-season upcoming games
+  const nextBatches = await Promise.all(active.map((c) => fetchNextLeague(c)))
+  const now         = new Date()
+  const fixtures    = nextBatches.flat()
+    .filter((e) => new Date(e.startDate) > now)
     .sort((a, b) => new Date(a.startDate) - new Date(b.startDate))
 
   return { results, fixtures, season }

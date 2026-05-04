@@ -19,7 +19,7 @@ function HeroFixture({ fixture }) {
   return (
     <div className="bg-gaa-green text-white rounded-2xl p-5 mb-5">
       <p className="text-xs font-bold text-green-200 mb-1 uppercase tracking-wide flex items-center gap-1">
-        <CodeIcon code={fixture.code} size={12} className="text-green-200" />
+        <CodeIcon code={fixture.code} size={12} colorClass="text-green-200" />
         {fixture.competitionShort ?? fixture.competition}
       </p>
       <div className="flex items-center justify-between gap-2">

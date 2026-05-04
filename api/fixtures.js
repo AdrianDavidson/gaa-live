@@ -1,8 +1,8 @@
-// Vercel serverless function — fetches full-season GAA data for all active competitions
-// and caches in Upstash Redis for 5 minutes.
+// Vercel serverless function — fetches full-season results + upcoming fixtures
+// for all GAA competitions and caches in Upstash Redis for 5 minutes.
 
 const BASE      = 'https://www.thesportsdb.com/api/v1/json/3'
-const CACHE_TTL = 300  // 5 minutes
+const CACHE_TTL = 300
 
 const COMPETITIONS = [
   // ── Hurling ──────────────────────────────────────────────────────────────
@@ -72,14 +72,20 @@ async function fetchSeasonEvents(competition, season) {
     const res  = await fetch(`${BASE}/eventsseason.php?id=${competition.theSportsDbId}&s=${season}`)
     const data = await res.json()
     return data?.events?.map((e) => normalizeEvent(e, competition)) ?? []
-  } catch {
-    return []
-  }
+  } catch { return [] }
+}
+
+async function fetchNextLeague(competition) {
+  try {
+    const res  = await fetch(`${BASE}/eventsnextleague.php?id=${competition.theSportsDbId}`)
+    const data = await res.json()
+    return data?.events?.map((e) => normalizeEvent(e, competition)) ?? []
+  } catch { return [] }
 }
 
 async function detectSeason() {
-  const year     = new Date().getFullYear()
-  const firstId  = COMPETITIONS[0].theSportsDbId
+  const year    = new Date().getFullYear()
+  const firstId = COMPETITIONS[0].theSportsDbId
   for (const y of [year, year - 1]) {
     try {
       const res  = await fetch(`${BASE}/eventsseason.php?id=${firstId}&s=${y}`)
@@ -91,19 +97,22 @@ async function detectSeason() {
 }
 
 async function buildPayload() {
-  const season    = await detectSeason()
-  const allEvents = await Promise.all(COMPETITIONS.map((c) => fetchSeasonEvents(c, season)))
-  const flat      = allEvents.flat()
-  const now       = new Date()
+  const season = await detectSeason()
 
-  return {
-    results:  flat.filter((e) => e.status === 'finished')
-                  .sort((a, b) => new Date(b.startDate) - new Date(a.startDate)),
-    fixtures: flat.filter((e) => e.status === 'upcoming' && new Date(e.startDate) > now)
-                  .sort((a, b) => new Date(a.startDate) - new Date(b.startDate)),
-    season,
-    fetchedAt: new Date().toISOString(),
-  }
+  // Results: full season via eventsseason
+  const seasonBatches = await Promise.all(COMPETITIONS.map((c) => fetchSeasonEvents(c, season)))
+  const results = seasonBatches.flat()
+    .filter((e) => e.status === 'finished')
+    .sort((a, b) => new Date(b.startDate) - new Date(a.startDate))
+
+  // Fixtures: eventsnextleague is not season-bound — catches cross-season upcoming games
+  const nextBatches = await Promise.all(COMPETITIONS.map((c) => fetchNextLeague(c)))
+  const now         = new Date()
+  const fixtures    = nextBatches.flat()
+    .filter((e) => new Date(e.startDate) > now)
+    .sort((a, b) => new Date(a.startDate) - new Date(b.startDate))
+
+  return { results, fixtures, season, fetchedAt: new Date().toISOString() }
 }
 
 export default async function handler(req, res) {

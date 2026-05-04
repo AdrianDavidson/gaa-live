@@ -41,7 +41,7 @@ export default function CodeToggle() {
                   <CodeIcon
                     code={icon}
                     size={14}
-                    className={active ? 'text-white' : 'text-gray-500'}
+                    colorClass={active ? 'text-white' : 'text-gray-500'}
                   />
                 )}
                 {label}

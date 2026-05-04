@@ -44,7 +44,7 @@ function ResultCard({ fixture }) {
         <span className="text-xs font-bold text-gaa-green uppercase tracking-wide flex items-center gap-1">
           {fixture.leagueBadge
             ? <img src={fixture.leagueBadge} alt="" className="w-4 h-4 object-contain shrink-0" aria-hidden="true" />
-            : <CodeIcon code={fixture.code} size={13} className="shrink-0 text-gaa-green" />
+            : <CodeIcon code={fixture.code} size={13} className="shrink-0" />
           }
           {fixture.competitionShort ?? fixture.competition}
         </span>
