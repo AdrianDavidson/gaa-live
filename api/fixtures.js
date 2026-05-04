@@ -44,6 +44,8 @@ function normalizeEvent(event, competition) {
     competitionShort: competition.short,
     group:            competition.group,
     venue:            event.strVenue ?? null,
+    leagueBadge:      event.strLeagueBadge ?? null,
+    season:           event.strSeason ?? null,
     status:           isFinished ? 'finished' : 'upcoming',
     source:           'thesportsdb',
     tvChannel:        null,

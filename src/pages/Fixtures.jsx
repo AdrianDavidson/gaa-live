@@ -1,4 +1,5 @@
 import { useState }             from 'react'
+import { Trophy, MapPin }        from 'lucide-react'
 import PageWrapper               from '../components/layout/PageWrapper'
 import Spinner                   from '../components/ui/Spinner'
 import CountyColourBadge         from '../components/ui/CountyColourBadge'
@@ -23,8 +24,13 @@ function FixtureCard({ fixture }) {
     >
       <div className="flex justify-between items-start mb-2">
         <div className="min-w-0 flex-1 pr-2">
-          <span className="text-xs font-bold text-gaa-green uppercase tracking-wide block truncate">
+          <span className="text-xs font-bold text-gaa-green uppercase tracking-wide flex items-center gap-1 truncate">
+            {fixture.leagueBadge
+              ? <img src={fixture.leagueBadge} alt="" className="w-4 h-4 object-contain shrink-0" aria-hidden="true" />
+              : <Trophy size={11} className="shrink-0" aria-hidden="true" />
+            }
             {fixture.competitionShort ?? fixture.competition}
+            {fixture.season && <span className="text-gray-400 font-normal normal-case">{fixture.season}</span>}
           </span>
           {fixture.tvChannel && (
             <span className="text-xs font-bold bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded mt-0.5 inline-block">
@@ -50,7 +56,10 @@ function FixtureCard({ fixture }) {
       </div>
 
       {fixture.venue && (
-        <p className="text-sm text-gray-400 mt-1 truncate">{fixture.venue}</p>
+        <p className="text-xs text-gray-400 mt-2 flex items-center gap-1 truncate">
+          <MapPin size={11} className="shrink-0" aria-hidden="true" />
+          {fixture.venue}
+        </p>
       )}
     </article>
   )
