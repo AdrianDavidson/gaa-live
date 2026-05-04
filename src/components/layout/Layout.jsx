@@ -5,6 +5,7 @@ import BottomNav            from './BottomNav'
 import NotificationBanner   from '../notifications/NotificationBanner'
 import { useAppStore }      from '../../store/appStore'
 import { COUNTY_COLOURS }   from '../../utils/countyColours'
+import { CodeFilterProvider } from '../../contexts/CodeFilterContext'
 
 export default function Layout() {
   const { fontSize, darkMode, theme, favouriteCounty } = useAppStore()
@@ -37,11 +38,13 @@ export default function Layout() {
   }, [fontSize, darkMode, theme, favouriteCounty])
 
   return (
-    <div className="min-h-screen flex flex-col max-w-lg mx-auto">
-      <Header />
-      <NotificationBanner />
-      <Outlet />
-      <BottomNav />
-    </div>
+    <CodeFilterProvider>
+      <div className="min-h-screen flex flex-col max-w-lg mx-auto">
+        <Header />
+        <NotificationBanner />
+        <Outlet />
+        <BottomNav />
+      </div>
+    </CodeFilterProvider>
   )
 }

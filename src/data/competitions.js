@@ -9,6 +9,7 @@ export const HURLING_COMPETITIONS = [
     name:           'All-Ireland Senior Hurling Championship',
     short:          'AI SHC',
     group:          'senior',
+    code:           'hurling',
   },
   {
     id:             'munster-shc',
@@ -16,6 +17,7 @@ export const HURLING_COMPETITIONS = [
     name:           'Munster Senior Hurling Championship',
     short:          'Munster SHC',
     group:          'senior',
+    code:           'hurling',
   },
   {
     id:             'leinster-shc',
@@ -23,6 +25,7 @@ export const HURLING_COMPETITIONS = [
     name:           'Leinster Senior Hurling Championship',
     short:          'Leinster SHC',
     group:          'senior',
+    code:           'hurling',
   },
   {
     id:             'mcdonagh-cup',
@@ -30,6 +33,7 @@ export const HURLING_COMPETITIONS = [
     name:           'Joe McDonagh Cup',
     short:          'McDonagh',
     group:          'senior',
+    code:           'hurling',
   },
   {
     id:             'christy-ring',
@@ -37,6 +41,7 @@ export const HURLING_COMPETITIONS = [
     name:           'Christy Ring Cup',
     short:          'Christy Ring',
     group:          'senior',
+    code:           'hurling',
   },
   // Foireann-sourced competitions (available once API key is configured)
   {
@@ -46,6 +51,7 @@ export const HURLING_COMPETITIONS = [
     name:           'Allianz Hurling League',
     short:          'NHL',
     group:          'senior',
+    code:           'hurling',
   },
   {
     id:             'u20-shc',
@@ -54,6 +60,7 @@ export const HURLING_COMPETITIONS = [
     name:           'All-Ireland Under-20 SHC',
     short:          'U20 SHC',
     group:          'under20',
+    code:           'hurling',
   },
   {
     id:             'ai-camogie',
@@ -62,6 +69,7 @@ export const HURLING_COMPETITIONS = [
     name:           'All-Ireland Camogie Championship',
     short:          'Camogie',
     group:          'camogie',
+    code:           'hurling',
   },
   {
     id:             'ai-camogie-int',
@@ -70,8 +78,63 @@ export const HURLING_COMPETITIONS = [
     name:           'All-Ireland Intermediate Camogie',
     short:          'Int. Camogie',
     group:          'camogie',
+    code:           'hurling',
   },
 ]
+
+export const FOOTBALL_COMPETITIONS = [
+  {
+    id:             'ai-sfc',
+    theSportsDbId:  5564,
+    name:           'All-Ireland Senior Football Championship',
+    short:          'AI SFC',
+    group:          'senior',
+    code:           'football',
+  },
+  {
+    id:             'connacht-sfc',
+    theSportsDbId:  5566,
+    name:           'Connacht Senior Football Championship',
+    short:          'Connacht SFC',
+    group:          'senior',
+    code:           'football',
+  },
+  {
+    id:             'munster-sfc',
+    theSportsDbId:  5568,
+    name:           'Munster Senior Football Championship',
+    short:          'Munster SFC',
+    group:          'senior',
+    code:           'football',
+  },
+  {
+    id:             'leinster-sfc',
+    theSportsDbId:  5567,
+    name:           'Leinster Senior Football Championship',
+    short:          'Leinster SFC',
+    group:          'senior',
+    code:           'football',
+  },
+  {
+    id:             'ulster-sfc',
+    theSportsDbId:  5569,
+    name:           'Ulster Senior Football Championship',
+    short:          'Ulster SFC',
+    group:          'senior',
+    code:           'football',
+  },
+  {
+    id:             'tailteann',
+    theSportsDbId:  5576,
+    name:           'Tailteann Cup',
+    short:          'Tailteann',
+    group:          'senior',
+    code:           'football',
+  },
+]
+
+// Unified list of all competitions — use this for filtering by code
+export const competitions = [...HURLING_COMPETITIONS, ...FOOTBALL_COMPETITIONS]
 
 export const COMPETITION_GROUPS = [
   { id: 'all',     label: 'All' },
@@ -81,9 +144,15 @@ export const COMPETITION_GROUPS = [
 ]
 
 export function getCompetitionById(id) {
-  return HURLING_COMPETITIONS.find((c) => c.id === id)
+  return competitions.find((c) => c.id === id)
 }
 
-export const ACTIVE_TSDB_COMPETITIONS = HURLING_COMPETITIONS.filter(
+export function competitionsByCode(code) {
+  return code === 'all'
+    ? competitions
+    : competitions.filter((c) => c.code === code)
+}
+
+export const ACTIVE_TSDB_COMPETITIONS = competitions.filter(
   (c) => c.theSportsDbId !== null
 )

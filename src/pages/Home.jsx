@@ -2,16 +2,24 @@ import { Link }             from 'react-router-dom'
 import { Trophy }            from 'lucide-react'
 import PageWrapper           from '../components/layout/PageWrapper'
 import Spinner               from '../components/ui/Spinner'
+import CodeIcon              from '../components/ui/CodeIcon'
 import { useAppStore }       from '../store/appStore'
-import { useHurlingData }    from '../hooks/useFixtures'
+import { useGAAData }        from '../hooks/useFixtures'
+import { useCodeFilter }     from '../contexts/CodeFilterContext'
 import { formatMatchDate }   from '../utils/formatters'
 import { isMatchWindow }     from '../utils/matchStatus'
 import { winnerGradient }    from '../utils/countyColours'
 
+const CODE_BORDER = {
+  hurling:  'border-l-[3px] border-l-gaa-hurling',
+  football: 'border-l-[3px] border-l-gaa-football',
+}
+
 function HeroFixture({ fixture }) {
   return (
     <div className="bg-gaa-green text-white rounded-2xl p-5 mb-5">
-      <p className="text-xs font-bold text-green-200 mb-1 uppercase tracking-wide">
+      <p className="text-xs font-bold text-green-200 mb-1 uppercase tracking-wide flex items-center gap-1">
+        <CodeIcon code={fixture.code} size={12} className="text-green-200" />
         {fixture.competitionShort ?? fixture.competition}
       </p>
       <div className="flex items-center justify-between gap-2">
@@ -38,17 +46,19 @@ function HeroFixture({ fixture }) {
 }
 
 function MiniResultCard({ fixture }) {
-  const homeWin  = fixture.homeScore?.total > fixture.awayScore?.total
-  const awayWin  = fixture.awayScore?.total > fixture.homeScore?.total
-  const bgImage  = winnerGradient(fixture.homeTeam, fixture.awayTeam, homeWin, awayWin)
-  const showIcon = !bgImage && (homeWin || awayWin)
+  const homeWin   = fixture.homeScore?.total > fixture.awayScore?.total
+  const awayWin   = fixture.awayScore?.total > fixture.homeScore?.total
+  const bgImage   = winnerGradient(fixture.homeTeam, fixture.awayTeam, homeWin, awayWin)
+  const showIcon  = !bgImage && (homeWin || awayWin)
+  const borderClass = CODE_BORDER[fixture.code] ?? ''
 
   return (
     <article
-      className="bg-white border border-gray-200 rounded-xl p-3 mb-2 overflow-hidden"
+      className={`bg-white border border-gray-200 rounded-xl p-3 mb-2 overflow-hidden ${borderClass}`}
       style={bgImage ? { backgroundImage: bgImage } : undefined}
     >
-      <p className="text-xs text-gaa-green font-bold mb-1 truncate">
+      <p className="text-xs text-gaa-green font-bold mb-1 truncate flex items-center gap-1">
+        <CodeIcon code={fixture.code} size={11} className="shrink-0" />
         {fixture.competitionShort}
       </p>
       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-1">
@@ -76,10 +86,15 @@ function MiniResultCard({ fixture }) {
 
 export default function Home() {
   const { favouriteCounty } = useAppStore()
-  const { data, isLoading } = useHurlingData()
+  const { data, isLoading } = useGAAData()
+  const { filter }          = useCodeFilter()
 
-  const fixtures = data?.fixtures ?? []
-  const results  = data?.results  ?? []
+  const allFixtures = data?.fixtures ?? []
+  const allResults  = data?.results  ?? []
+
+  // Apply code filter
+  const fixtures = filter === 'all' ? allFixtures : allFixtures.filter((f) => f.code === filter)
+  const results  = filter === 'all' ? allResults  : allResults.filter((f)  => f.code === filter)
 
   // Next fixture — prefer favourite county if set
   const nextFixture = favouriteCounty
@@ -133,8 +148,11 @@ export default function Home() {
                 </Link>
               </div>
               {fixtures.slice(0, 3).map((f) => (
-                <article key={f.id} className="bg-white border border-gray-200 rounded-xl p-3 mb-2">
-                  <p className="text-xs text-gaa-green font-bold mb-1">{f.competitionShort}</p>
+                <article key={f.id} className={`bg-white border border-gray-200 rounded-xl p-3 mb-2 ${CODE_BORDER[f.code] ?? ''}`}>
+                  <p className="text-xs text-gaa-green font-bold mb-1 flex items-center gap-1">
+                    <CodeIcon code={f.code} size={11} className="shrink-0" />
+                    {f.competitionShort}
+                  </p>
                   <div className="flex items-center justify-between font-bold">
                     <span className="text-sm">{f.homeTeam}</span>
                     <span className="text-xs text-gray-400 font-normal">{formatMatchDate(f.startDate)}</span>
@@ -160,7 +178,7 @@ export default function Home() {
 
           {!nextFixture && !recentResults.length && (
             <div className="text-center py-12">
-              <p className="text-gray-400 text-base">Loading hurling data…</p>
+              <p className="text-gray-400 text-base">Loading GAA data…</p>
             </div>
           )}
         </>

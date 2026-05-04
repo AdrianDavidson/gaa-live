@@ -13,6 +13,14 @@ export default {
           stream: '#7c3aed',
           polled: '#d97706',
           nodata: '#6b7280',
+          football: {
+            DEFAULT: '#2D7A3E',  // muted GAA green
+            soft:    '#E8F2EA',
+          },
+          hurling: {
+            DEFAULT: '#C97B0F',  // amber / sliotar
+            soft:    '#FBF0DC',
+          },
         },
       },
       fontSize: {

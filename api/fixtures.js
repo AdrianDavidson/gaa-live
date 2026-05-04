@@ -1,20 +1,36 @@
-// Vercel serverless function — aggregates TheSportsDB data for all hurling
-// competitions and caches the result in Upstash Redis for 5 minutes.
+// Vercel serverless function — aggregates TheSportsDB data for all GAA competitions
+// (hurling + football) and caches the result in Upstash Redis for 5 minutes.
 // Falls back to direct TheSportsDB fetch if Redis is not configured.
 
 const BASE    = 'https://www.thesportsdb.com/api/v1/json/3'
 const CACHE_TTL = 300  // 5 minutes — faster score pickup after games end
 
+// Football TSDB IDs are pending confirmation — set theSportsDbId to null until confirmed.
 const COMPETITIONS = [
-  { id: 'ai-shc',      theSportsDbId: 5565, name: 'All-Ireland Senior Hurling Championship', short: 'AI SHC',     group: 'senior' },
-  { id: 'munster-shc', theSportsDbId: 5570, name: 'Munster Senior Hurling Championship',     short: 'Munster SHC', group: 'senior' },
-  { id: 'leinster-shc',theSportsDbId: 5571, name: 'Leinster Senior Hurling Championship',    short: 'Leinster SHC',group: 'senior' },
-  { id: 'mcdonagh-cup',theSportsDbId: 5572, name: 'Joe McDonagh Cup',                        short: 'McDonagh',    group: 'senior' },
-  { id: 'christy-ring',theSportsDbId: 5573, name: 'Christy Ring Cup',                        short: 'Christy Ring',group: 'senior' },
+  // ── Hurling ──────────────────────────────────────────────────────────────
+  { id: 'ai-shc',       theSportsDbId: 5565, name: 'All-Ireland Senior Hurling Championship', short: 'AI SHC',      group: 'senior', code: 'hurling' },
+  { id: 'munster-shc',  theSportsDbId: 5570, name: 'Munster Senior Hurling Championship',     short: 'Munster SHC', group: 'senior', code: 'hurling' },
+  { id: 'leinster-shc', theSportsDbId: 5571, name: 'Leinster Senior Hurling Championship',    short: 'Leinster SHC',group: 'senior', code: 'hurling' },
+  { id: 'mcdonagh-cup', theSportsDbId: 5572, name: 'Joe McDonagh Cup',                        short: 'McDonagh',    group: 'senior', code: 'hurling' },
+  { id: 'christy-ring', theSportsDbId: 5573, name: 'Christy Ring Cup',                        short: 'Christy Ring',group: 'senior', code: 'hurling' },
+
+  // ── Football ─────────────────────────────────────────────────────────────
+  { id: 'ai-sfc',       theSportsDbId: 5564, name: 'All-Ireland Senior Football Championship', short: 'AI SFC',      group: 'senior', code: 'football' },
+  { id: 'connacht-sfc', theSportsDbId: 5566, name: 'Connacht Senior Football Championship',    short: 'Connacht SFC',group: 'senior', code: 'football' },
+  { id: 'munster-sfc',  theSportsDbId: 5568, name: 'Munster Senior Football Championship',     short: 'Munster SFC', group: 'senior', code: 'football' },
+  { id: 'leinster-sfc', theSportsDbId: 5567, name: 'Leinster Senior Football Championship',    short: 'Leinster SFC',group: 'senior', code: 'football' },
+  { id: 'ulster-sfc',   theSportsDbId: 5569, name: 'Ulster Senior Football Championship',      short: 'Ulster SFC',  group: 'senior', code: 'football' },
+  { id: 'tailteann',    theSportsDbId: 5576, name: 'Tailteann Cup',                            short: 'Tailteann',   group: 'senior', code: 'football' },
 ]
 
 function cleanTeamName(raw) {
-  return (raw ?? '').replace(/ GAA Hurling$/i, '').replace(/ GAA$/i, '').replace(/ Hurling$/i, '').trim()
+  return (raw ?? '')
+    .replace(/ GAA Hurling$/i, '')
+    .replace(/ GAA Football$/i, '')
+    .replace(/ GAA$/i, '')
+    .replace(/ Hurling$/i, '')
+    .replace(/ Football$/i, '')
+    .trim()
 }
 
 function parseResult(strResult) {
@@ -43,6 +59,7 @@ function normalizeEvent(event, competition) {
     competitionId:    competition.id,
     competitionShort: competition.short,
     group:            competition.group,
+    code:             competition.code,  // 'hurling' | 'football'
     venue:            event.strVenue ?? null,
     leagueBadge:      event.strLeagueBadge ?? null,
     season:           event.strSeason ?? null,
@@ -53,6 +70,7 @@ function normalizeEvent(event, competition) {
 }
 
 async function fetchFromTSDB(endpoint, competition) {
+  if (!competition.theSportsDbId) return []  // not yet confirmed
   try {
     const res  = await fetch(`${BASE}/${endpoint}?id=${competition.theSportsDbId}`)
     const data = await res.json()
@@ -83,11 +101,11 @@ export default async function handler(req, res) {
     try {
       const { Redis } = await import('@upstash/redis')
       const redis     = new Redis({ url: redisUrl, token: redisToken })
-      const cached    = await redis.get('gaa:hurling:fixtures')
+      const cached    = await redis.get('gaa:fixtures')
       if (cached) return res.json(typeof cached === 'string' ? JSON.parse(cached) : cached)
 
       const payload = await buildPayload()
-      await redis.set('gaa:hurling:fixtures', JSON.stringify(payload), { ex: CACHE_TTL })
+      await redis.set('gaa:fixtures', JSON.stringify(payload), { ex: CACHE_TTL })
       return res.json(payload)
     } catch (err) {
       console.error('Redis error, falling back to direct fetch:', err.message)

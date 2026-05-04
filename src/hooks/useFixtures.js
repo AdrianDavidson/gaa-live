@@ -1,18 +1,21 @@
 import { useQuery } from '@tanstack/react-query'
-import { fetchHurlingData } from '../services/fixturesService'
+import { fetchGAAData } from '../services/fixturesService'
 
-export function useHurlingData() {
+export function useGAAData() {
   return useQuery({
-    queryKey:        ['hurling-data'],
-    queryFn:         fetchHurlingData,
+    queryKey:        ['gaa-data'],
+    queryFn:         fetchGAAData,
     staleTime:       3 * 60 * 1000,    // 3 min
     refetchInterval: 5 * 60 * 1000,    // background refresh every 5 min
     retry:           2,
   })
 }
 
+// backward-compat alias used by existing page components
+export const useHurlingData = useGAAData
+
 export function useFixtures() {
-  const query = useHurlingData()
+  const query = useGAAData()
   return {
     ...query,
     data: query.data?.fixtures ?? [],
@@ -20,7 +23,7 @@ export function useFixtures() {
 }
 
 export function useResults() {
-  const query = useHurlingData()
+  const query = useGAAData()
   return {
     ...query,
     data: query.data?.results ?? [],

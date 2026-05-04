@@ -1,11 +1,12 @@
 const BASE = 'https://www.thesportsdb.com/api/v1/json/3'
 
-// TheSportsDB stores team names as "Cork GAA Hurling" — strip the suffix.
 function cleanTeamName(raw) {
-  return raw
+  return (raw ?? '')
     .replace(/ GAA Hurling$/i, '')
+    .replace(/ GAA Football$/i, '')
     .replace(/ GAA$/i, '')
     .replace(/ Hurling$/i, '')
+    .replace(/ Football$/i, '')
     .trim()
 }
 
@@ -43,20 +44,23 @@ function normalizeEvent(event, competition) {
     event.intAwayScore !== null
 
   return {
-    id:             `tsdb-${event.idEvent}`,
-    homeTeam:       cleanTeamName(event.strHomeTeam ?? ''),
-    awayTeam:       cleanTeamName(event.strAwayTeam ?? ''),
-    startDate:      buildISODate(event.dateEvent, event.strTime),
-    homeScore:      scores.home,  // { gp: "1-18", total: 21 } or null
-    awayScore:      scores.away,
-    competition:    competition.name,
-    competitionId:  competition.id,
+    id:               `tsdb-${event.idEvent}`,
+    homeTeam:         cleanTeamName(event.strHomeTeam ?? ''),
+    awayTeam:         cleanTeamName(event.strAwayTeam ?? ''),
+    startDate:        buildISODate(event.dateEvent, event.strTime),
+    homeScore:        scores.home,  // { gp: "1-18", total: 21 } or null
+    awayScore:        scores.away,
+    competition:      competition.name,
+    competitionId:    competition.id,
     competitionShort: competition.short,
-    group:          competition.group,
-    venue:          event.strVenue ?? null,
-    status:         isFinished ? 'finished' : 'upcoming',
-    source:         'thesportsdb',
-    tvChannel:      null,
+    group:            competition.group,
+    code:             competition.code,  // 'hurling' | 'football'
+    venue:            event.strVenue ?? null,
+    leagueBadge:      event.strLeagueBadge ?? null,
+    season:           event.strSeason ?? null,
+    status:           isFinished ? 'finished' : 'upcoming',
+    source:           'thesportsdb',
+    tvChannel:        null,
   }
 }
 
@@ -80,7 +84,7 @@ export async function fetchCompetitionFixtures(competition) {
   return fetchEvents('eventsnextleague.php', competition)
 }
 
-export async function fetchAllHurlingData(competitions) {
+export async function fetchAllGAAData(competitions) {
   const results  = await Promise.all(competitions.map(fetchCompetitionResults))
   const fixtures = await Promise.all(competitions.map(fetchCompetitionFixtures))
   return {
@@ -88,3 +92,6 @@ export async function fetchAllHurlingData(competitions) {
     fixtures: fixtures.flat().sort((a, b) => new Date(a.startDate) - new Date(b.startDate)),
   }
 }
+
+// backward-compat alias
+export const fetchAllHurlingData = fetchAllGAAData

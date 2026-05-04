@@ -3,10 +3,18 @@ import { Trophy, MapPin, PlayCircle, ChevronDown, ChevronUp } from 'lucide-react
 import PageWrapper             from '../components/layout/PageWrapper'
 import Spinner                 from '../components/ui/Spinner'
 import CountyColourBadge       from '../components/ui/CountyColourBadge'
+import CodeIcon                from '../components/ui/CodeIcon'
+import CodeToggle              from '../components/ui/CodeToggle'
 import { useResults }          from '../hooks/useFixtures'
+import { useCodeFilter }       from '../contexts/CodeFilterContext'
 import { COMPETITION_GROUPS }  from '../data/competitions'
 import { winnerGradient }      from '../utils/countyColours'
 import { formatMatchDate }     from '../utils/formatters'
+
+const CODE_BORDER = {
+  hurling:  'border-l-[3px] border-l-gaa-hurling',
+  football: 'border-l-[3px] border-l-gaa-football',
+}
 
 // ─── Result card ───────────────────────────────────────────────────────────
 
@@ -18,22 +26,18 @@ function ResultCard({ fixture }) {
   const bgImage  = winnerGradient(fixture.homeTeam, fixture.awayTeam, homeWin, awayWin)
   const showIcon = !bgImage && (homeWin || awayWin)
 
-  // Highlights: YouTube search works well for clips — no API key needed.
-  // TODO (future): Upgrade to YouTube Data API v3 (VITE_YOUTUBE_API_KEY) to search
-  // the official GAA channel (UC14eltCtgNDkBCTbGIYcRpg) and return a direct video
-  // link with thumbnail instead of a search results page. See youtubeService.js.
-  const searchTerm    = `${fixture.homeTeam} ${fixture.awayTeam} hurling ${fixture.season ?? ''} ${fixture.competitionShort ?? ''}`
+  const searchTerm    = `${fixture.homeTeam} ${fixture.awayTeam} ${fixture.code ?? 'GAA'} ${fixture.season ?? ''} ${fixture.competitionShort ?? ''}`
   const highlightsUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(`${searchTerm} highlights`)}`
 
-  // Full match replays — link directly to each platform's search/GAA section.
-  // RTÉ Player and TG4 are free; GAA GO requires a subscription.
-  const rteUrl  = `https://www.rte.ie/player/search?q=${encodeURIComponent(searchTerm)}`
-  const tg4Url  = `https://www.tg4.ie/en/player/categories/sport-tv-player/?series=GAA+2025&genre=Sport`
+  const rteUrl   = `https://www.rte.ie/player/search?q=${encodeURIComponent(searchTerm)}`
+  const tg4Url   = `https://www.tg4.ie/en/player/categories/sport-tv-player/?series=GAA+2025&genre=Sport`
   const gaaGoUrl = `https://www.gaago.ie/`
+
+  const borderClass = CODE_BORDER[fixture.code] ?? ''
 
   return (
     <article
-      className="bg-white border border-gray-200 rounded-xl p-4 mb-3 overflow-hidden"
+      className={`bg-white border border-gray-200 rounded-xl p-4 mb-3 overflow-hidden ${borderClass}`}
       style={bgImage ? { backgroundImage: bgImage } : undefined}
       aria-label={`Result: ${fixture.homeTeam} versus ${fixture.awayTeam}`}
     >
@@ -41,7 +45,7 @@ function ResultCard({ fixture }) {
         <span className="text-xs font-bold text-gaa-green uppercase tracking-wide flex items-center gap-1">
           {fixture.leagueBadge
             ? <img src={fixture.leagueBadge} alt="" className="w-4 h-4 object-contain shrink-0" aria-hidden="true" />
-            : <Trophy size={11} className="shrink-0" aria-hidden="true" />
+            : <CodeIcon code={fixture.code} size={13} className="shrink-0 text-gaa-green" />
           }
           {fixture.competitionShort ?? fixture.competition}
           {fixture.season && <span className="text-gray-400 font-normal normal-case">{fixture.season}</span>}
@@ -170,9 +174,12 @@ function ResultCard({ fixture }) {
 export default function Results() {
   const [groupFilter, setGroupFilter] = useState('all')
   const { data: results, isLoading, isError, dataUpdatedAt } = useResults()
+  const { filter: codeFilter } = useCodeFilter()
 
   const filtered = results.filter(
-    (f) => groupFilter === 'all' || f.group === groupFilter
+    (f) =>
+      (groupFilter === 'all' || f.group === groupFilter) &&
+      (codeFilter  === 'all' || f.code  === codeFilter)
   )
 
   const byCompetition = filtered.reduce((acc, f) => {
@@ -182,8 +189,14 @@ export default function Results() {
     return acc
   }, {})
 
+  const emptyMessage = codeFilter === 'football'
+    ? 'No football results to show.'
+    : codeFilter === 'hurling'
+      ? 'No hurling results to show.'
+      : 'No results found. Results appear here after games are played.'
+
   return (
-    <PageWrapper title="Hurling Results">
+    <PageWrapper title="Results" titleAction={<CodeToggle />}>
 
       {/* Group filter */}
       <div
@@ -217,9 +230,7 @@ export default function Results() {
       )}
 
       {!isLoading && Object.entries(byCompetition).length === 0 && (
-        <p className="text-center text-gray-500 text-base py-8">
-          No results found. Results appear here after games are played.
-        </p>
+        <p className="text-center text-gray-500 text-base py-8">{emptyMessage}</p>
       )}
 
       {Object.entries(byCompetition).map(([competitionName, group]) => (

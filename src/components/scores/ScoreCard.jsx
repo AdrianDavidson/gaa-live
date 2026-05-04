@@ -4,8 +4,14 @@ import TierBadge                from '../data-tier/TierBadge'
 import UnavailableNotice        from '../data-tier/UnavailableNotice'
 import DataSourceNotice         from '../data-tier/DataSourceNotice'
 import EmbedPlayer              from '../streams/EmbedPlayer'
+import CodeIcon                 from '../ui/CodeIcon'
 import { getElapsedMinutes, formatTimeAgo } from '../../utils/matchStatus'
 import { formatMatchDate }      from '../../utils/formatters'
+
+const CODE_BORDER = {
+  hurling:  'border-l-[3px] border-l-gaa-hurling',
+  football: 'border-l-[3px] border-l-gaa-football',
+}
 
 function ScoreCardSkeleton() {
   return (
@@ -29,14 +35,16 @@ export default function ScoreCard({ fixture }) {
   if (isLoading) return <ScoreCardSkeleton />
 
   const { tier, streamData, scoreData } = tierData
+  const borderClass = CODE_BORDER[fixture.code] ?? ''
 
   return (
     <article
-      className="bg-white border border-gray-200 rounded-xl p-4 mb-3"
+      className={`bg-white border border-gray-200 rounded-xl p-4 mb-3 ${borderClass}`}
       aria-label={`${fixture.homeTeam} versus ${fixture.awayTeam}`}
     >
       <div className="flex justify-between items-center mb-3">
-        <div>
+        <div className="flex items-center gap-1.5">
+          <CodeIcon code={fixture.code} size={13} className="text-gray-400 shrink-0" />
           <span className="text-xs font-bold text-gray-400 uppercase tracking-wide">
             {fixture.competition}
           </span>

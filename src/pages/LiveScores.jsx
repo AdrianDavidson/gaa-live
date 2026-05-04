@@ -2,25 +2,35 @@ import { useState, useEffect }                    from 'react'
 import PageWrapper                                  from '../components/layout/PageWrapper'
 import Spinner                                      from '../components/ui/Spinner'
 import CountyColourBadge                            from '../components/ui/CountyColourBadge'
-import { useHurlingData }                           from '../hooks/useFixtures'
+import CodeIcon                                     from '../components/ui/CodeIcon'
+import CodeToggle                                   from '../components/ui/CodeToggle'
+import { useGAAData }                               from '../hooks/useFixtures'
 import { useLiveRss, filterRssForMatch, SOURCE_LABELS } from '../hooks/useLiveRss'
+import { useCodeFilter }                            from '../contexts/CodeFilterContext'
 import { isMatchWindow, getElapsedMinutes, formatTimeAgo } from '../utils/matchStatus'
 import { formatMatchDate }                          from '../utils/formatters'
 
+const CODE_BORDER = {
+  hurling:  'border-l-[3px] border-l-gaa-hurling',
+  football: 'border-l-[3px] border-l-gaa-football',
+}
+
 // ─── Match card ────────────────────────────────────────────────────────────
 
-function LiveCard({ fixture, rssItems }) {
+function LiveCard({ fixture, rssItems, codeFilter }) {
   const homeWin = fixture.homeScore?.total > fixture.awayScore?.total
   const awayWin = fixture.awayScore?.total > fixture.homeScore?.total
   const elapsed = getElapsedMinutes(fixture)
 
   const relevant = rssItems?.length
-    ? filterRssForMatch(rssItems, fixture.homeTeam, fixture.awayTeam)
+    ? filterRssForMatch(rssItems, fixture.homeTeam, fixture.awayTeam, codeFilter)
     : []
+
+  const borderClass = CODE_BORDER[fixture.code] ?? ''
 
   return (
     <article
-      className="bg-white border border-gray-200 rounded-xl p-4 mb-3"
+      className={`bg-white border border-gray-200 rounded-xl p-4 mb-3 ${borderClass}`}
       aria-live="polite"
       aria-label={`${fixture.homeTeam} versus ${fixture.awayTeam}`}
     >
@@ -30,7 +40,10 @@ function LiveCard({ fixture, rssItems }) {
         <span className="text-xs font-bold text-red-600 uppercase">
           In Progress — {elapsed}&apos; (est.)
         </span>
-        <span className="ml-auto text-xs text-gray-400">{fixture.competitionShort}</span>
+        <span className="ml-auto flex items-center gap-1 text-xs text-gray-400">
+          <CodeIcon code={fixture.code} size={12} />
+          {fixture.competitionShort}
+        </span>
       </div>
 
       {/* Score row */}
@@ -97,11 +110,17 @@ function LiveCard({ fixture, rssItems }) {
 
 export default function LiveScores() {
   const [secondsAgo, setSecondsAgo] = useState(0)
-  const { data, isLoading, dataUpdatedAt } = useHurlingData()
+  const { data, isLoading, dataUpdatedAt } = useGAAData()
+  const { filter } = useCodeFilter()
 
   const allFixtures = [...(data?.fixtures ?? []), ...(data?.results ?? [])]
   const liveNow     = allFixtures.filter((f) => isMatchWindow(f))
   const hasLive     = liveNow.length > 0
+
+  // Apply code filter
+  const filtered = filter === 'all'
+    ? liveNow
+    : liveNow.filter((f) => f.code === filter)
 
   // RSS polling — only active when there are live matches
   const { data: rssData, dataUpdatedAt: rssUpdatedAt } = useLiveRss(hasLive)
@@ -117,8 +136,14 @@ export default function LiveScores() {
     return () => clearInterval(id)
   }, [dataUpdatedAt])
 
+  const emptyMessage = filter === 'football'
+    ? 'No live football matches right now'
+    : filter === 'hurling'
+      ? 'No live hurling right now'
+      : 'No live matches right now'
+
   return (
-    <PageWrapper title="Live Scores">
+    <PageWrapper title="Live Scores" titleAction={<CodeToggle />}>
 
       {/* Data freshness indicator */}
       <p className="text-sm text-gray-500 mb-4" aria-live="polite">
@@ -135,17 +160,17 @@ export default function LiveScores() {
       {isLoading && <Spinner label="Checking for live games…" />}
 
       <div aria-live="polite">
-        {!isLoading && liveNow.length === 0 && (
+        {!isLoading && filtered.length === 0 && (
           <div className="text-center py-12">
-            <p className="text-lg font-bold text-gray-600 mb-1">No live hurling right now</p>
+            <p className="text-lg font-bold text-gray-600 mb-1">{emptyMessage}</p>
             <p className="text-sm text-gray-400">
               This page activates 30 minutes before kick-off and stays live for 110 minutes.
             </p>
           </div>
         )}
 
-        {liveNow.map((f) => (
-          <LiveCard key={f.id} fixture={f} rssItems={rssItems} />
+        {filtered.map((f) => (
+          <LiveCard key={f.id} fixture={f} rssItems={rssItems} codeFilter={filter} />
         ))}
       </div>
 

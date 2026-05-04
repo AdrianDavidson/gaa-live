@@ -1,11 +1,19 @@
 import { useState }             from 'react'
-import { Trophy, MapPin }        from 'lucide-react'
+import { MapPin }                from 'lucide-react'
 import PageWrapper               from '../components/layout/PageWrapper'
 import Spinner                   from '../components/ui/Spinner'
 import CountyColourBadge         from '../components/ui/CountyColourBadge'
+import CodeIcon                  from '../components/ui/CodeIcon'
+import CodeToggle                from '../components/ui/CodeToggle'
 import { useFixtures }           from '../hooks/useFixtures'
-import { COMPETITION_GROUPS, HURLING_COMPETITIONS } from '../data/competitions'
+import { useCodeFilter }         from '../contexts/CodeFilterContext'
+import { COMPETITION_GROUPS, competitions } from '../data/competitions'
 import { formatMatchDate, formatDateGroup } from '../utils/formatters'
+
+const CODE_BORDER = {
+  hurling:  'border-l-[3px] border-l-gaa-hurling',
+  football: 'border-l-[3px] border-l-gaa-football',
+}
 
 function groupByDate(fixtures) {
   return fixtures.reduce((acc, f) => {
@@ -17,9 +25,11 @@ function groupByDate(fixtures) {
 }
 
 function FixtureCard({ fixture }) {
+  const borderClass = CODE_BORDER[fixture.code] ?? ''
+
   return (
     <article
-      className="bg-white border border-gray-200 rounded-xl p-4 mb-3"
+      className={`bg-white border border-gray-200 rounded-xl p-4 mb-3 ${borderClass}`}
       aria-label={`${fixture.homeTeam} versus ${fixture.awayTeam}`}
     >
       <div className="flex justify-between items-start mb-2">
@@ -27,7 +37,7 @@ function FixtureCard({ fixture }) {
           <span className="text-xs font-bold text-gaa-green uppercase tracking-wide flex items-center gap-1 truncate">
             {fixture.leagueBadge
               ? <img src={fixture.leagueBadge} alt="" className="w-4 h-4 object-contain shrink-0" aria-hidden="true" />
-              : <Trophy size={11} className="shrink-0" aria-hidden="true" />
+              : <CodeIcon code={fixture.code} size={13} className="shrink-0 text-gaa-green" />
             }
             {fixture.competitionShort ?? fixture.competition}
             {fixture.season && <span className="text-gray-400 font-normal normal-case">{fixture.season}</span>}
@@ -68,21 +78,31 @@ function FixtureCard({ fixture }) {
 export default function Fixtures() {
   const [groupFilter, setGroupFilter] = useState('all')
   const { data: fixtures, isLoading, isError, dataUpdatedAt } = useFixtures()
+  const { filter: codeFilter } = useCodeFilter()
 
   const filtered = fixtures.filter(
-    (f) => groupFilter === 'all' || f.group === groupFilter
+    (f) =>
+      (groupFilter === 'all' || f.group === groupFilter) &&
+      (codeFilter  === 'all' || f.code  === codeFilter)
   )
 
   const grouped = groupByDate(filtered)
 
-  // Competitions with no TheSportsDB data yet (shown as "coming soon")
-  const unavailableGroups = HURLING_COMPETITIONS.filter(
+  // Competitions with no TheSportsDB data yet, filtered by both group and code
+  const unavailableGroups = competitions.filter(
     (c) => c.theSportsDbId === null &&
-    (groupFilter === 'all' || c.group === groupFilter)
+    (groupFilter === 'all' || c.group === groupFilter) &&
+    (codeFilter  === 'all' || c.code  === codeFilter)
   )
 
+  const emptyMessage = codeFilter === 'football'
+    ? 'No upcoming football fixtures found for this filter.'
+    : codeFilter === 'hurling'
+      ? 'No upcoming hurling fixtures found for this filter.'
+      : 'No upcoming fixtures found for this filter.'
+
   return (
-    <PageWrapper title="Hurling Fixtures">
+    <PageWrapper title="Fixtures" titleAction={<CodeToggle />}>
 
       {/* Competition group filter */}
       <div
@@ -119,9 +139,7 @@ export default function Fixtures() {
         <>
           {/* Fixtures grouped by date */}
           {Object.entries(grouped).length === 0 && !isLoading && (
-            <p className="text-center text-gray-500 text-base py-4">
-              No upcoming fixtures found for this filter.
-            </p>
+            <p className="text-center text-gray-500 text-base py-4">{emptyMessage}</p>
           )}
 
           {Object.entries(grouped).map(([key, group]) => (
@@ -142,7 +160,8 @@ export default function Fixtures() {
               <ul className="space-y-1">
                 {unavailableGroups.map((c) => (
                   <li key={c.id} className="text-sm text-gray-500 flex items-center gap-2">
-                    <span className="text-gray-300">•</span> {c.name}
+                    <CodeIcon code={c.code} size={12} className="text-gray-400 shrink-0" />
+                    {c.name}
                   </li>
                 ))}
               </ul>
