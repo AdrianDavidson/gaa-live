@@ -14,7 +14,24 @@ const RSS_SOURCES = [
   { name: 'hoganstand', url: 'https://www.hoganstand.com/feed' },
 ]
 
+// Minimum gap between real RSS fetches — prevents hammering sources
+// during match windows when many clients call this endpoint simultaneously.
+const MIN_REFRESH_MS = 2 * 60 * 1000  // 2 minutes
+
 export default async function handler(req, res) {
+  res.setHeader('Cache-Control', 'no-store')
+
+  // Check freshness before hitting RSS sources
+  const updatedAt = await redis.get('gaa:rss:updatedAt')
+  const ageMs     = updatedAt ? Date.now() - new Date(updatedAt).getTime() : Infinity
+
+  if (ageMs < MIN_REFRESH_MS) {
+    const cached = await redis.get('gaa:rss:latest')
+    const items  = cached ? (typeof cached === 'string' ? JSON.parse(cached) : cached) : []
+    return res.json({ ok: true, fresh: false, items, updatedAt })
+  }
+
+  // Stale — fetch from all RSS sources
   const allItems = []
 
   for (const source of RSS_SOURCES) {
@@ -36,14 +53,19 @@ export default async function handler(req, res) {
 
   const fresh    = JSON.stringify(allItems)
   const previous = await redis.get('gaa:rss:latest')
+  const changed  = fresh !== (typeof previous === 'string' ? previous : JSON.stringify(previous))
+  const now      = new Date().toISOString()
 
-  if (fresh !== previous) {
+  if (changed) {
     await redis.set('gaa:rss:latest', fresh)
-    await redis.set('gaa:rss:updatedAt', new Date().toISOString())
+    await redis.set('gaa:rss:updatedAt', now)
     await triggerPushNotifications(allItems, previous ? JSON.parse(previous) : [])
+  } else {
+    // Even if content is same, update the timestamp so staleness resets
+    await redis.set('gaa:rss:updatedAt', now)
   }
 
-  res.json({ ok: true, itemCount: allItems.length, changed: fresh !== previous })
+  res.json({ ok: true, fresh: true, items: allItems, updatedAt: now, changed })
 }
 
 async function triggerPushNotifications(fresh, previous) {

@@ -5,8 +5,8 @@ export function useHurlingData() {
   return useQuery({
     queryKey:        ['hurling-data'],
     queryFn:         fetchHurlingData,
-    staleTime:       10 * 60 * 1000,   // 10 min
-    refetchInterval: 15 * 60 * 1000,   // background refresh every 15 min
+    staleTime:       3 * 60 * 1000,    // 3 min
+    refetchInterval: 5 * 60 * 1000,    // background refresh every 5 min
     retry:           2,
   })
 }

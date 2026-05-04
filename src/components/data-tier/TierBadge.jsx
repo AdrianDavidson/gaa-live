@@ -14,16 +14,16 @@ const TIER_CONFIG = {
     title:     'Live score updates',
   },
   [DATA_TIERS.POLLED]: {
-    label:     '~10 MIN',
+    label:     'NEWS UPDATE',
     className: 'bg-amber-100 text-amber-800',
     pulse:     false,
-    title:     'Scores updated every 10 minutes from public RSS feeds',
+    title:     'Latest headlines from RTÉ Sport, BBC Sport & Hoganstand — checked every 2 minutes',
   },
   [DATA_TIERS.NONE]: {
-    label:     'NO LIVE DATA',
+    label:     'AFTER FULL TIME',
     className: 'bg-gray-100 text-gray-500',
     pulse:     false,
-    title:     'No live data available for this match',
+    title:     'Score will appear here shortly after the match ends',
   },
 }
 

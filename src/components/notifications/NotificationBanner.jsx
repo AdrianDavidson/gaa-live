@@ -27,7 +27,7 @@ export default function NotificationBanner() {
       aria-label="Notification prompt"
       className="bg-gaa-green text-white px-4 py-3 flex items-center justify-between gap-3"
     >
-      <p className="text-sm font-medium">Get score alerts — tap to turn on</p>
+      <p className="text-sm font-medium">Get notified when full-time results come in — tap to enable</p>
       <div className="flex gap-2 shrink-0">
         <button
           onClick={handleEnable}

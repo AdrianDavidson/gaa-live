@@ -1,9 +1,9 @@
 // Vercel serverless function — aggregates TheSportsDB data for all hurling
-// competitions and caches the result in Upstash Redis for 30 minutes.
+// competitions and caches the result in Upstash Redis for 5 minutes.
 // Falls back to direct TheSportsDB fetch if Redis is not configured.
 
 const BASE    = 'https://www.thesportsdb.com/api/v1/json/3'
-const CACHE_TTL = 1800  // 30 minutes
+const CACHE_TTL = 300  // 5 minutes — faster score pickup after games end
 
 const COMPETITIONS = [
   { id: 'ai-shc',      theSportsDbId: 5565, name: 'All-Ireland Senior Hurling Championship', short: 'AI SHC',     group: 'senior' },

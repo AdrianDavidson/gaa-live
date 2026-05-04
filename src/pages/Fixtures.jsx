@@ -1,6 +1,7 @@
 import { useState }             from 'react'
 import PageWrapper               from '../components/layout/PageWrapper'
 import Spinner                   from '../components/ui/Spinner'
+import CountyColourBadge         from '../components/ui/CountyColourBadge'
 import { useFixtures }           from '../hooks/useFixtures'
 import { COMPETITION_GROUPS, HURLING_COMPETITIONS } from '../data/competitions'
 import { formatMatchDate, formatDateGroup } from '../utils/formatters'
@@ -37,9 +38,15 @@ function FixtureCard({ fixture }) {
       </div>
 
       <div className="flex items-center justify-between font-bold text-lg gap-2">
-        <span className="flex-1 text-left">{fixture.homeTeam}</span>
+        <span className="flex-1 flex items-center gap-1.5">
+          <CountyColourBadge teamName={fixture.homeTeam} />
+          {fixture.homeTeam}
+        </span>
         <span className="text-gray-400 font-normal text-base shrink-0">vs</span>
-        <span className="flex-1 text-right">{fixture.awayTeam}</span>
+        <span className="flex-1 flex items-center justify-end gap-1.5">
+          {fixture.awayTeam}
+          <CountyColourBadge teamName={fixture.awayTeam} />
+        </span>
       </div>
 
       {fixture.venue && (

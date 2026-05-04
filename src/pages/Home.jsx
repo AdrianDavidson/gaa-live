@@ -98,15 +98,18 @@ export default function Home() {
           {/* Live now */}
           {liveNow.length > 0 && (
             <section className="mb-5">
-              <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center justify-between mb-1">
                 <h2 className="text-lg font-black text-gray-900 flex items-center gap-2">
                   <span className="w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse" aria-hidden="true" />
-                  Live Now
+                  In Progress
                 </h2>
                 <Link to="/live" className="text-sm font-bold text-gaa-green min-h-[44px] flex items-center">
                   See all →
                 </Link>
               </div>
+              <p className="text-xs text-gray-400 mb-2">
+                Live in-game scores aren&apos;t available yet — the result will appear once the match ends.
+              </p>
               {liveNow.map((f) => <MiniResultCard key={f.id} fixture={f} />)}
             </section>
           )}

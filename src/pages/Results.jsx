@@ -1,10 +1,22 @@
-import { useState }     from 'react'
-import PageWrapper       from '../components/layout/PageWrapper'
-import Spinner           from '../components/ui/Spinner'
-import GAAScore          from '../components/scores/GAAScore'
-import { useResults }    from '../hooks/useFixtures'
-import { COMPETITION_GROUPS, HURLING_COMPETITIONS } from '../data/competitions'
-import { formatMatchDate } from '../utils/formatters'
+import { useState }          from 'react'
+import PageWrapper             from '../components/layout/PageWrapper'
+import Spinner                 from '../components/ui/Spinner'
+import CountyColourBadge       from '../components/ui/CountyColourBadge'
+import { useResults }          from '../hooks/useFixtures'
+import { COMPETITION_GROUPS }  from '../data/competitions'
+import { formatMatchDate }     from '../utils/formatters'
+
+function teamColour(isWinner, isLoser) {
+  if (isWinner) return 'text-gaa-green'
+  if (isLoser)  return 'text-red-600'
+  return 'text-gray-800'
+}
+
+function scoreColour(isWinner, isLoser) {
+  if (isWinner) return 'text-gaa-green'
+  if (isLoser)  return 'text-red-500'
+  return 'text-gray-700'
+}
 
 function ResultCard({ fixture }) {
   const homeWin = fixture.homeScore?.total > fixture.awayScore?.total
@@ -22,30 +34,38 @@ function ResultCard({ fixture }) {
         <span className="text-xs text-gray-400">{formatMatchDate(fixture.startDate)}</span>
       </div>
 
-      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+      <div className="grid grid-cols-[1fr_auto_1fr] items-start gap-2">
         {/* Home team */}
         <div className="text-right">
-          <p className={`font-bold text-base ${homeWin ? 'text-gaa-green' : 'text-gray-800'}`}>
-            {fixture.homeTeam}
-          </p>
+          <div className="flex items-center justify-end gap-1.5 mb-0.5">
+            <p className={`font-bold text-base leading-tight ${teamColour(homeWin, awayWin)}`}>
+              {fixture.homeTeam}
+            </p>
+            <CountyColourBadge teamName={fixture.homeTeam} />
+          </div>
           {fixture.homeScore && (
-            <p className={`text-xl font-black tabular-nums ${homeWin ? 'text-gaa-green' : 'text-gray-700'}`}>
+            <p className={`text-xl font-black tabular-nums ${scoreColour(homeWin, awayWin)}`}>
               {fixture.homeScore.gp}
+              <span className="text-sm font-bold ml-1 opacity-70">({fixture.homeScore.total})</span>
             </p>
           )}
         </div>
 
         {/* Divider */}
-        <div className="text-center text-gray-300 font-bold text-lg px-1">–</div>
+        <div className="text-center text-gray-300 font-bold text-lg px-1 pt-1">–</div>
 
         {/* Away team */}
         <div className="text-left">
-          <p className={`font-bold text-base ${awayWin ? 'text-gaa-green' : 'text-gray-800'}`}>
-            {fixture.awayTeam}
-          </p>
+          <div className="flex items-center gap-1.5 mb-0.5">
+            <CountyColourBadge teamName={fixture.awayTeam} />
+            <p className={`font-bold text-base leading-tight ${teamColour(awayWin, homeWin)}`}>
+              {fixture.awayTeam}
+            </p>
+          </div>
           {fixture.awayScore && (
-            <p className={`text-xl font-black tabular-nums ${awayWin ? 'text-gaa-green' : 'text-gray-700'}`}>
+            <p className={`text-xl font-black tabular-nums ${scoreColour(awayWin, homeWin)}`}>
               {fixture.awayScore.gp}
+              <span className="text-sm font-bold ml-1 opacity-70">({fixture.awayScore.total})</span>
             </p>
           )}
         </div>

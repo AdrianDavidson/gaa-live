@@ -1,11 +1,12 @@
-import { NavLink } from 'react-router-dom'
+import { NavLink }                                   from 'react-router-dom'
+import { House, Radio, Calendar, Trophy, Settings }  from 'lucide-react'
 
 const NAV_ITEMS = [
-  { to: '/',         label: 'Home',     icon: '🏠' },
-  { to: '/live',     label: 'Live',     icon: '🟢' },
-  { to: '/fixtures', label: 'Fixtures', icon: '📅' },
-  { to: '/results',  label: 'Results',  icon: '📊' },
-  { to: '/settings', label: 'Settings', icon: '⚙️'  },
+  { to: '/',         label: 'Home',     Icon: House    },
+  { to: '/live',     label: 'Live',     Icon: Radio    },
+  { to: '/fixtures', label: 'Fixtures', Icon: Calendar },
+  { to: '/results',  label: 'Results',  Icon: Trophy   },
+  { to: '/settings', label: 'Settings', Icon: Settings },
 ]
 
 export default function BottomNav() {
@@ -15,20 +16,38 @@ export default function BottomNav() {
       aria-label="Main navigation"
     >
       <ul className="flex" role="list">
-        {NAV_ITEMS.map(({ to, label, icon }) => (
+        {NAV_ITEMS.map(({ to, label, Icon }) => (
           <li key={to} className="flex-1">
             <NavLink
               to={to}
               end={to === '/'}
               aria-current={({ isActive }) => (isActive ? 'page' : undefined)}
               className={({ isActive }) =>
-                `flex flex-col items-center justify-center gap-0.5 py-2 min-h-[56px] w-full text-xs font-medium transition-colors ${
-                  isActive ? 'text-gaa-green' : 'text-gray-500 hover:text-gray-700'
+                `relative flex flex-col items-center justify-center gap-1 py-2 min-h-[56px] w-full text-xs font-semibold transition-colors ${
+                  isActive
+                    ? 'text-gaa-green'
+                    : 'text-gray-400 hover:text-gray-600 active:text-gaa-green'
                 }`
               }
             >
-              <span className="text-xl" aria-hidden="true">{icon}</span>
-              <span>{label}</span>
+              {({ isActive }) => (
+                <>
+                  {/* Active indicator bar along the top edge */}
+                  {isActive && (
+                    <span
+                      className="absolute top-0 left-2 right-2 h-0.5 bg-gaa-green rounded-b-full"
+                      aria-hidden="true"
+                    />
+                  )}
+
+                  <Icon
+                    size={22}
+                    strokeWidth={isActive ? 2.5 : 1.75}
+                    aria-hidden="true"
+                  />
+                  <span>{label}</span>
+                </>
+              )}
             </NavLink>
           </li>
         ))}
