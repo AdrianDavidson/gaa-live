@@ -137,7 +137,6 @@ export default function LiveScores() {
       <div aria-live="polite">
         {!isLoading && liveNow.length === 0 && (
           <div className="text-center py-12">
-            <p className="text-4xl mb-3">🏑</p>
             <p className="text-lg font-bold text-gray-600 mb-1">No live hurling right now</p>
             <p className="text-sm text-gray-400">
               This page activates 30 minutes before kick-off and stays live for 110 minutes.

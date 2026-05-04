@@ -8,12 +8,82 @@
   }
 
   body {
-    @apply bg-white text-gray-900 font-sans;
+    background-color: var(--bg-app);
+    @apply text-gray-900 font-sans;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 }
 
-/* Font size modifier classes applied to <html> via Settings */
-html.font-large   { font-size: 20px; }
-html.font-xl      { font-size: 24px; }
+/* Font size overrides applied to <html> via Settings */
+html.font-large { font-size: 20px; }
+html.font-xl    { font-size: 24px; }
+
+/* ── Theme variables ───────────────────────────────────────────────── */
+
+:root {
+  --gaa-primary:      #006633;
+  --gaa-accent:       #FFD700;
+  --bg-app:           #f9fafb;
+}
+
+html[data-theme="professional"] {
+  --gaa-primary:  #005C2E;
+  --gaa-accent:   #C9A84C;
+  --bg-app:       #F4F3F0;
+}
+
+html[data-theme="county"] {
+  --gaa-primary:  var(--county-primary,   #006633);
+  --gaa-accent:   var(--county-secondary, #FFD700);
+  --bg-app:       #f9fafb;
+}
+
+/* ── Dark mode overrides ───────────────────────────────────────────── */
+/*
+   VSCode-inspired dark palette with a slight blue-grey tint:
+     body/page bg  →  #1e1f2a
+     card surface  →  #252636
+     borders       →  #2e3048
+*/
+
+html.dark body             { background-color: #1e1f2a; color: #e2e4ed; }
+
+/* Surfaces */
+html.dark .bg-white        { background-color: #252636; }
+html.dark .bg-gray-50      { background-color: #1e1f2a; }
+html.dark .bg-gray-100     { background-color: #2e3048; }
+
+/* Borders */
+html.dark .border-gray-100 { border-color: #2a2b3d; }
+html.dark .border-gray-200 { border-color: #2e3048; }
+html.dark .border-gray-300 { border-color: #3a3d5c; }
+
+/* Typography */
+html.dark .text-gaa-dark   { color: #e2e4ed; }
+html.dark .text-gray-900   { color: #e2e4ed; }
+html.dark .text-gray-800   { color: #d4d6e3; }
+html.dark .text-gray-700   { color: #9aa0b9; }
+html.dark .text-gray-600   { color: #7d84a0; }
+html.dark .text-gray-500   { color: #636878; }
+html.dark .text-gray-400   { color: #565f7a; }
+html.dark .text-gray-300   { color: #3d4466; }
+
+/* Amber (warning banners) */
+html.dark .bg-amber-50     { background-color: #1f1a0e; }
+html.dark .bg-amber-100    { background-color: #2a1d08; }
+html.dark .border-amber-200 { border-color: #3d2e0a; }
+html.dark .text-amber-800  { color: #fbbf24; }
+html.dark .text-amber-700  { color: #f59e0b; }
+
+/* Green banners */
+html.dark .bg-green-50     { background-color: #0d1f13; }
+html.dark .border-green-200 { border-color: #1a3d23; }
+
+/* Blue badges (TV channel) */
+html.dark .bg-blue-50      { background-color: #0f172a; }
+html.dark .text-blue-700   { color: #93c5fd; }
+
+/* Form controls */
+html.dark select,
+html.dark input            { background-color: #252636; color: #e2e4ed; border-color: #2e3048; }

@@ -1,30 +1,25 @@
 import { useState }          from 'react'
+import { Trophy }              from 'lucide-react'
 import PageWrapper             from '../components/layout/PageWrapper'
 import Spinner                 from '../components/ui/Spinner'
 import CountyColourBadge       from '../components/ui/CountyColourBadge'
 import { useResults }          from '../hooks/useFixtures'
 import { COMPETITION_GROUPS }  from '../data/competitions'
+import { winnerGradient }      from '../utils/countyColours'
 import { formatMatchDate }     from '../utils/formatters'
 
-function teamColour(isWinner, isLoser) {
-  if (isWinner) return 'text-gaa-green'
-  if (isLoser)  return 'text-red-600'
-  return 'text-gray-800'
-}
-
-function scoreColour(isWinner, isLoser) {
-  if (isWinner) return 'text-gaa-green'
-  if (isLoser)  return 'text-red-500'
-  return 'text-gray-700'
-}
+// ─── Result card ───────────────────────────────────────────────────────────
 
 function ResultCard({ fixture }) {
-  const homeWin = fixture.homeScore?.total > fixture.awayScore?.total
-  const awayWin = fixture.awayScore?.total > fixture.homeScore?.total
+  const homeWin  = fixture.homeScore?.total > fixture.awayScore?.total
+  const awayWin  = fixture.awayScore?.total > fixture.homeScore?.total
+  const bgImage  = winnerGradient(fixture.homeTeam, fixture.awayTeam, homeWin, awayWin)
+  const showIcon = !bgImage && (homeWin || awayWin)
 
   return (
     <article
-      className="bg-white border border-gray-200 rounded-xl p-4 mb-3"
+      className="bg-white border border-gray-200 rounded-xl p-4 mb-3 overflow-hidden"
+      style={bgImage ? { backgroundImage: bgImage } : undefined}
       aria-label={`Result: ${fixture.homeTeam} versus ${fixture.awayTeam}`}
     >
       <div className="flex justify-between items-center mb-2">
@@ -35,40 +30,44 @@ function ResultCard({ fixture }) {
       </div>
 
       <div className="grid grid-cols-[1fr_auto_1fr] items-start gap-2">
+
         {/* Home team */}
         <div className="text-right">
           <div className="flex items-center justify-end gap-1.5 mb-0.5">
-            <p className={`font-bold text-base leading-tight ${teamColour(homeWin, awayWin)}`}>
+            <p className="font-bold text-base leading-tight text-gray-900">
               {fixture.homeTeam}
             </p>
             <CountyColourBadge teamName={fixture.homeTeam} />
           </div>
           {fixture.homeScore && (
-            <p className={`text-xl font-black tabular-nums ${scoreColour(homeWin, awayWin)}`}>
+            <p className="text-xl font-black tabular-nums text-gray-800 flex items-center justify-end gap-1">
+              {showIcon && homeWin && <Trophy size={13} className="text-gaa-green shrink-0" />}
               {fixture.homeScore.gp}
-              <span className="text-sm font-bold ml-1 opacity-70">({fixture.homeScore.total})</span>
+              <span className="text-sm font-bold ml-1 opacity-60">({fixture.homeScore.total})</span>
             </p>
           )}
         </div>
 
-        {/* Divider */}
+        {/* Centre divider */}
         <div className="text-center text-gray-300 font-bold text-lg px-1 pt-1">–</div>
 
         {/* Away team */}
         <div className="text-left">
           <div className="flex items-center gap-1.5 mb-0.5">
             <CountyColourBadge teamName={fixture.awayTeam} />
-            <p className={`font-bold text-base leading-tight ${teamColour(awayWin, homeWin)}`}>
+            <p className="font-bold text-base leading-tight text-gray-900">
               {fixture.awayTeam}
             </p>
           </div>
           {fixture.awayScore && (
-            <p className={`text-xl font-black tabular-nums ${scoreColour(awayWin, homeWin)}`}>
+            <p className="text-xl font-black tabular-nums text-gray-800 flex items-center gap-1">
               {fixture.awayScore.gp}
-              <span className="text-sm font-bold ml-1 opacity-70">({fixture.awayScore.total})</span>
+              <span className="text-sm font-bold ml-1 opacity-60">({fixture.awayScore.total})</span>
+              {showIcon && awayWin && <Trophy size={13} className="text-gaa-green shrink-0" />}
             </p>
           )}
         </div>
+
       </div>
 
       {fixture.venue && (
@@ -78,6 +77,8 @@ function ResultCard({ fixture }) {
   )
 }
 
+// ─── Page ──────────────────────────────────────────────────────────────────
+
 export default function Results() {
   const [groupFilter, setGroupFilter] = useState('all')
   const { data: results, isLoading, isError, dataUpdatedAt } = useResults()
@@ -86,7 +87,6 @@ export default function Results() {
     (f) => groupFilter === 'all' || f.group === groupFilter
   )
 
-  // Group by competition for easy browsing
   const byCompetition = filtered.reduce((acc, f) => {
     const key = f.competition
     if (!acc[key]) acc[key] = { short: f.competitionShort, items: [] }
@@ -149,6 +149,7 @@ export default function Results() {
           {new Date(dataUpdatedAt).toLocaleTimeString('en-IE', { hour: '2-digit', minute: '2-digit' })}
         </p>
       )}
+
     </PageWrapper>
   )
 }

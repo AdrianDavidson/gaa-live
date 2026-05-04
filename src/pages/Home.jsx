@@ -1,11 +1,12 @@
 import { Link }             from 'react-router-dom'
+import { Trophy }            from 'lucide-react'
 import PageWrapper           from '../components/layout/PageWrapper'
 import Spinner               from '../components/ui/Spinner'
-import GAAScore              from '../components/scores/GAAScore'
 import { useAppStore }       from '../store/appStore'
 import { useHurlingData }    from '../hooks/useFixtures'
 import { formatMatchDate }   from '../utils/formatters'
 import { isMatchWindow }     from '../utils/matchStatus'
+import { winnerGradient }    from '../utils/countyColours'
 
 function HeroFixture({ fixture }) {
   return (
@@ -37,27 +38,35 @@ function HeroFixture({ fixture }) {
 }
 
 function MiniResultCard({ fixture }) {
-  const homeWin = fixture.homeScore?.total > fixture.awayScore?.total
-  const awayWin = fixture.awayScore?.total > fixture.homeScore?.total
+  const homeWin  = fixture.homeScore?.total > fixture.awayScore?.total
+  const awayWin  = fixture.awayScore?.total > fixture.homeScore?.total
+  const bgImage  = winnerGradient(fixture.homeTeam, fixture.awayTeam, homeWin, awayWin)
+  const showIcon = !bgImage && (homeWin || awayWin)
+
   return (
-    <article className="bg-white border border-gray-200 rounded-xl p-3 mb-2">
+    <article
+      className="bg-white border border-gray-200 rounded-xl p-3 mb-2 overflow-hidden"
+      style={bgImage ? { backgroundImage: bgImage } : undefined}
+    >
       <p className="text-xs text-gaa-green font-bold mb-1 truncate">
         {fixture.competitionShort}
       </p>
       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-1">
-        <p className={`text-sm font-bold text-right truncate ${homeWin ? 'text-gaa-green' : ''}`}>
+        <p className="text-sm font-bold text-right truncate text-gray-900">
           {fixture.homeTeam}
         </p>
-        <div className="text-center px-1">
-          <span className={`text-base font-black tabular-nums ${homeWin ? 'text-gaa-green' : 'text-gray-700'}`}>
+        <div className="text-center px-1 flex items-center gap-0.5">
+          {showIcon && homeWin && <Trophy size={11} className="text-gaa-green shrink-0" />}
+          <span className="text-base font-black tabular-nums text-gray-800">
             {fixture.homeScore?.gp}
           </span>
           <span className="text-gray-300 mx-0.5">–</span>
-          <span className={`text-base font-black tabular-nums ${awayWin ? 'text-gaa-green' : 'text-gray-700'}`}>
+          <span className="text-base font-black tabular-nums text-gray-800">
             {fixture.awayScore?.gp}
           </span>
+          {showIcon && awayWin && <Trophy size={11} className="text-gaa-green shrink-0" />}
         </div>
-        <p className={`text-sm font-bold text-left truncate ${awayWin ? 'text-gaa-green' : ''}`}>
+        <p className="text-sm font-bold text-left truncate text-gray-900">
           {fixture.awayTeam}
         </p>
       </div>

@@ -5,8 +5,8 @@ export default {
     extend: {
       colors: {
         gaa: {
-          green:  '#006633',
-          gold:   '#FFD700',
+          green:  'var(--gaa-primary)',   // driven by active theme
+          gold:   'var(--gaa-accent)',    // driven by active theme
           dark:   '#1a1a1a',
           muted:  '#6b7280',
           live:   '#dc2626',

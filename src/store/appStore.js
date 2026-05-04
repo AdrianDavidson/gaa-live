@@ -7,11 +7,13 @@ export const useAppStore = create(
       favouriteCounty:      null,
       fontSize:             'medium',
       darkMode:             false,
+      theme:                'default',   // 'default' | 'county' | 'professional'
       notificationsEnabled: false,
 
       setFavouriteCounty:  (county) => set({ favouriteCounty: county }),
       setFontSize:         (size)   => set({ fontSize: size }),
       toggleDarkMode:      ()       => set((s) => ({ darkMode: !s.darkMode })),
+      setTheme:            (t)      => set({ theme: t }),
       toggleNotifications: (val)    => set({ notificationsEnabled: val }),
     }),
     { name: 'gaa-app-settings' }
