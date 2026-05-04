@@ -43,43 +43,6 @@ export const HURLING_COMPETITIONS = [
     group:          'senior',
     code:           'hurling',
   },
-  // Foireann-sourced competitions (available once API key is configured)
-  {
-    id:             'allianz-hl',
-    theSportsDbId:  null,
-    foireannId:     null,  // set once Foireann key obtained
-    name:           'Allianz Hurling League',
-    short:          'NHL',
-    group:          'senior',
-    code:           'hurling',
-  },
-  {
-    id:             'u20-shc',
-    theSportsDbId:  null,
-    foireannId:     null,
-    name:           'All-Ireland Under-20 SHC',
-    short:          'U20 SHC',
-    group:          'under20',
-    code:           'hurling',
-  },
-  {
-    id:             'ai-camogie',
-    theSportsDbId:  null,
-    foireannId:     null,
-    name:           'All-Ireland Camogie Championship',
-    short:          'Camogie',
-    group:          'camogie',
-    code:           'hurling',
-  },
-  {
-    id:             'ai-camogie-int',
-    theSportsDbId:  null,
-    foireannId:     null,
-    name:           'All-Ireland Intermediate Camogie',
-    short:          'Int. Camogie',
-    group:          'camogie',
-    code:           'hurling',
-  },
 ]
 
 export const FOOTBALL_COMPETITIONS = [
@@ -133,15 +96,8 @@ export const FOOTBALL_COMPETITIONS = [
   },
 ]
 
-// Unified list of all competitions — use this for filtering by code
+// Unified list — use this for filtering by code
 export const competitions = [...HURLING_COMPETITIONS, ...FOOTBALL_COMPETITIONS]
-
-export const COMPETITION_GROUPS = [
-  { id: 'all',     label: 'All' },
-  { id: 'senior',  label: 'Senior' },
-  { id: 'under20', label: 'Under 20' },
-  { id: 'camogie', label: 'Camogie' },
-]
 
 export function getCompetitionById(id) {
   return competitions.find((c) => c.id === id)

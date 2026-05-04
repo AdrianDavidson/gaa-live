@@ -1,11 +1,9 @@
-// Vercel serverless function — aggregates TheSportsDB data for all GAA competitions
-// (hurling + football) and caches the result in Upstash Redis for 5 minutes.
-// Falls back to direct TheSportsDB fetch if Redis is not configured.
+// Vercel serverless function — fetches full-season GAA data for all active competitions
+// and caches in Upstash Redis for 5 minutes.
 
-const BASE    = 'https://www.thesportsdb.com/api/v1/json/3'
-const CACHE_TTL = 300  // 5 minutes — faster score pickup after games end
+const BASE      = 'https://www.thesportsdb.com/api/v1/json/3'
+const CACHE_TTL = 300  // 5 minutes
 
-// Football TSDB IDs are pending confirmation — set theSportsDbId to null until confirmed.
 const COMPETITIONS = [
   // ── Hurling ──────────────────────────────────────────────────────────────
   { id: 'ai-shc',       theSportsDbId: 5565, name: 'All-Ireland Senior Hurling Championship', short: 'AI SHC',      group: 'senior', code: 'hurling' },
@@ -59,7 +57,7 @@ function normalizeEvent(event, competition) {
     competitionId:    competition.id,
     competitionShort: competition.short,
     group:            competition.group,
-    code:             competition.code,  // 'hurling' | 'football'
+    code:             competition.code,
     venue:            event.strVenue ?? null,
     leagueBadge:      event.strLeagueBadge ?? null,
     season:           event.strSeason ?? null,
@@ -69,10 +67,9 @@ function normalizeEvent(event, competition) {
   }
 }
 
-async function fetchFromTSDB(endpoint, competition) {
-  if (!competition.theSportsDbId) return []  // not yet confirmed
+async function fetchSeasonEvents(competition, season) {
   try {
-    const res  = await fetch(`${BASE}/${endpoint}?id=${competition.theSportsDbId}`)
+    const res  = await fetch(`${BASE}/eventsseason.php?id=${competition.theSportsDbId}&s=${season}`)
     const data = await res.json()
     return data?.events?.map((e) => normalizeEvent(e, competition)) ?? []
   } catch {
@@ -80,12 +77,31 @@ async function fetchFromTSDB(endpoint, competition) {
   }
 }
 
+async function detectSeason() {
+  const year     = new Date().getFullYear()
+  const firstId  = COMPETITIONS[0].theSportsDbId
+  for (const y of [year, year - 1]) {
+    try {
+      const res  = await fetch(`${BASE}/eventsseason.php?id=${firstId}&s=${y}`)
+      const data = await res.json()
+      if (data?.events?.length) return String(y)
+    } catch {}
+  }
+  return String(year)
+}
+
 async function buildPayload() {
-  const allResults  = await Promise.all(COMPETITIONS.map((c) => fetchFromTSDB('eventspastleague.php', c)))
-  const allFixtures = await Promise.all(COMPETITIONS.map((c) => fetchFromTSDB('eventsnextleague.php', c)))
+  const season    = await detectSeason()
+  const allEvents = await Promise.all(COMPETITIONS.map((c) => fetchSeasonEvents(c, season)))
+  const flat      = allEvents.flat()
+  const now       = new Date()
+
   return {
-    results:  allResults.flat().sort((a, b)  => new Date(b.startDate) - new Date(a.startDate)),
-    fixtures: allFixtures.flat().sort((a, b) => new Date(a.startDate) - new Date(b.startDate)),
+    results:  flat.filter((e) => e.status === 'finished')
+                  .sort((a, b) => new Date(b.startDate) - new Date(a.startDate)),
+    fixtures: flat.filter((e) => e.status === 'upcoming' && new Date(e.startDate) > now)
+                  .sort((a, b) => new Date(a.startDate) - new Date(b.startDate)),
+    season,
     fetchedAt: new Date().toISOString(),
   }
 }
@@ -93,7 +109,6 @@ async function buildPayload() {
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', `s-maxage=${CACHE_TTL}, stale-while-revalidate`)
 
-  // Try Redis cache first
   const redisUrl   = process.env.UPSTASH_REDIS_REST_URL
   const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN
 
@@ -112,7 +127,5 @@ export default async function handler(req, res) {
     }
   }
 
-  // No Redis configured — fetch directly (fine for dev / low traffic)
-  const payload = await buildPayload()
-  res.json(payload)
+  res.json(await buildPayload())
 }

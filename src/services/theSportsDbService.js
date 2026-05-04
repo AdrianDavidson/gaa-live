@@ -29,11 +29,10 @@ function parseResult(strResult) {
   }
 }
 
-// TheSportsDB times are UTC. Combine dateEvent + strTime into a proper ISO string.
 function buildISODate(dateEvent, strTime) {
   if (!dateEvent) return null
-  const time = strTime?.substring(0, 5) ?? '00:00'  // "HH:MM"
-  return `${dateEvent}T${time}:00Z`  // UTC
+  const time = strTime?.substring(0, 5) ?? '00:00'
+  return `${dateEvent}T${time}:00Z`
 }
 
 function normalizeEvent(event, competition) {
@@ -48,13 +47,13 @@ function normalizeEvent(event, competition) {
     homeTeam:         cleanTeamName(event.strHomeTeam ?? ''),
     awayTeam:         cleanTeamName(event.strAwayTeam ?? ''),
     startDate:        buildISODate(event.dateEvent, event.strTime),
-    homeScore:        scores.home,  // { gp: "1-18", total: 21 } or null
+    homeScore:        scores.home,
     awayScore:        scores.away,
     competition:      competition.name,
     competitionId:    competition.id,
     competitionShort: competition.short,
     group:            competition.group,
-    code:             competition.code,  // 'hurling' | 'football'
+    code:             competition.code,
     venue:            event.strVenue ?? null,
     leagueBadge:      event.strLeagueBadge ?? null,
     season:           event.strSeason ?? null,
@@ -76,6 +75,31 @@ async function fetchEvents(endpoint, competition) {
   }
 }
 
+async function fetchSeasonEvents(competition, season) {
+  try {
+    const res  = await fetch(`${BASE}/eventsseason.php?id=${competition.theSportsDbId}&s=${season}`)
+    const data = await res.json()
+    if (!data?.events?.length) return []
+    return data.events.map((e) => normalizeEvent(e, competition))
+  } catch (err) {
+    console.error(`TheSportsDB season fetch failed for ${competition.name} ${season}:`, err.message)
+    return []
+  }
+}
+
+// Probe to find which season year has data — tries current year then previous.
+async function detectActiveSeason(firstCompetition) {
+  const year = new Date().getFullYear()
+  for (const y of [year, year - 1]) {
+    try {
+      const res  = await fetch(`${BASE}/eventsseason.php?id=${firstCompetition.theSportsDbId}&s=${y}`)
+      const data = await res.json()
+      if (data?.events?.length) return String(y)
+    } catch {}
+  }
+  return String(year)
+}
+
 export async function fetchCompetitionResults(competition) {
   return fetchEvents('eventspastleague.php', competition)
 }
@@ -85,12 +109,23 @@ export async function fetchCompetitionFixtures(competition) {
 }
 
 export async function fetchAllGAAData(competitions) {
-  const results  = await Promise.all(competitions.map(fetchCompetitionResults))
-  const fixtures = await Promise.all(competitions.map(fetchCompetitionFixtures))
-  return {
-    results:  results.flat().sort((a, b) => new Date(b.startDate) - new Date(a.startDate)),
-    fixtures: fixtures.flat().sort((a, b) => new Date(a.startDate) - new Date(b.startDate)),
-  }
+  const active = competitions.filter((c) => c.theSportsDbId !== null)
+  if (!active.length) return { results: [], fixtures: [], season: null }
+
+  const season   = await detectActiveSeason(active[0])
+  const allEvents = await Promise.all(active.map((c) => fetchSeasonEvents(c, season)))
+  const flat      = allEvents.flat()
+  const now       = new Date()
+
+  const results  = flat
+    .filter((e) => e.status === 'finished')
+    .sort((a, b) => new Date(b.startDate) - new Date(a.startDate))
+
+  const fixtures = flat
+    .filter((e) => e.status === 'upcoming' && new Date(e.startDate) > now)
+    .sort((a, b) => new Date(a.startDate) - new Date(b.startDate))
+
+  return { results, fixtures, season }
 }
 
 // backward-compat alias

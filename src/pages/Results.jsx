@@ -5,11 +5,10 @@ import Spinner                 from '../components/ui/Spinner'
 import CountyColourBadge       from '../components/ui/CountyColourBadge'
 import CodeIcon                from '../components/ui/CodeIcon'
 import CodeToggle              from '../components/ui/CodeToggle'
-import { useResults }          from '../hooks/useFixtures'
+import { useResults, useGAAData } from '../hooks/useFixtures'
 import { useCodeFilter }       from '../contexts/CodeFilterContext'
-import { COMPETITION_GROUPS }  from '../data/competitions'
 import { winnerGradient }      from '../utils/countyColours'
-import { formatMatchDate }     from '../utils/formatters'
+import { formatMatchDate, weekMondayKey, formatWeekRange } from '../utils/formatters'
 
 const CODE_BORDER = {
   hurling:  'border-l-[3px] border-l-gaa-hurling',
@@ -28,10 +27,9 @@ function ResultCard({ fixture }) {
 
   const searchTerm    = `${fixture.homeTeam} ${fixture.awayTeam} ${fixture.code ?? 'GAA'} ${fixture.season ?? ''} ${fixture.competitionShort ?? ''}`
   const highlightsUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(`${searchTerm} highlights`)}`
-
-  const rteUrl   = `https://www.rte.ie/player/search?q=${encodeURIComponent(searchTerm)}`
-  const tg4Url   = `https://www.tg4.ie/en/player/categories/sport-tv-player/?series=GAA+2025&genre=Sport`
-  const gaaGoUrl = `https://www.gaago.ie/`
+  const rteUrl        = `https://www.rte.ie/player/search?q=${encodeURIComponent(searchTerm)}`
+  const tg4Url        = `https://www.tg4.ie/en/player/categories/sport-tv-player/?series=GAA+2025&genre=Sport`
+  const gaaGoUrl      = `https://www.gaago.ie/`
 
   const borderClass = CODE_BORDER[fixture.code] ?? ''
 
@@ -41,6 +39,7 @@ function ResultCard({ fixture }) {
       style={bgImage ? { backgroundImage: bgImage } : undefined}
       aria-label={`Result: ${fixture.homeTeam} versus ${fixture.awayTeam}`}
     >
+      {/* Competition row */}
       <div className="flex justify-between items-center mb-2">
         <span className="text-xs font-bold text-gaa-green uppercase tracking-wide flex items-center gap-1">
           {fixture.leagueBadge
@@ -48,19 +47,16 @@ function ResultCard({ fixture }) {
             : <CodeIcon code={fixture.code} size={13} className="shrink-0 text-gaa-green" />
           }
           {fixture.competitionShort ?? fixture.competition}
-          {fixture.season && <span className="text-gray-400 font-normal normal-case">{fixture.season}</span>}
         </span>
         <span className="text-xs text-gray-400">{formatMatchDate(fixture.startDate)}</span>
       </div>
 
+      {/* Score grid */}
       <div className="grid grid-cols-[1fr_auto_1fr] items-start gap-2">
 
-        {/* Home team */}
         <div className="text-right">
           <div className="flex items-center justify-end gap-1.5 mb-0.5">
-            <p className="font-bold text-base leading-tight text-gray-900">
-              {fixture.homeTeam}
-            </p>
+            <p className="font-bold text-base leading-tight text-gray-900">{fixture.homeTeam}</p>
             <CountyColourBadge teamName={fixture.homeTeam} />
           </div>
           {fixture.homeScore && (
@@ -72,16 +68,12 @@ function ResultCard({ fixture }) {
           )}
         </div>
 
-        {/* Centre divider */}
         <div className="text-center text-gray-300 font-bold text-lg px-1 pt-1">–</div>
 
-        {/* Away team */}
         <div className="text-left">
           <div className="flex items-center gap-1.5 mb-0.5">
             <CountyColourBadge teamName={fixture.awayTeam} />
-            <p className="font-bold text-base leading-tight text-gray-900">
-              {fixture.awayTeam}
-            </p>
+            <p className="font-bold text-base leading-tight text-gray-900">{fixture.awayTeam}</p>
           </div>
           {fixture.awayScore && (
             <p className="text-xl font-black tabular-nums text-gray-800 flex items-center gap-1">
@@ -101,7 +93,7 @@ function ResultCard({ fixture }) {
         </p>
       )}
 
-      {/* Watch on YouTube — tap to expand */}
+      {/* Watch — tap to expand */}
       <button
         onClick={() => setExpanded((v) => !v)}
         className="mt-3 w-full flex items-center justify-center gap-1.5 text-xs font-bold text-gray-400 hover:text-gaa-green transition-colors min-h-[36px]"
@@ -114,8 +106,6 @@ function ResultCard({ fixture }) {
 
       {expanded && (
         <div className="mt-2 space-y-3">
-
-          {/* Highlights */}
           <div>
             <p className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-1.5">Highlights</p>
             <a
@@ -128,66 +118,49 @@ function ResultCard({ fixture }) {
               Search YouTube
             </a>
           </div>
-
-          {/* Full match replay platforms */}
           <div>
             <p className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-1.5">Full Match Replay</p>
             <div className="flex gap-2">
-              <a
-                href={rteUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex-1 text-center text-xs font-bold py-2 rounded-lg bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-colors"
-              >
-                RTÉ Player
-              </a>
-              <a
-                href={tg4Url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex-1 text-center text-xs font-bold py-2 rounded-lg bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100 transition-colors"
-              >
-                TG4 Player
-              </a>
-              <a
-                href={gaaGoUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex-1 text-center text-xs font-bold py-2 rounded-lg bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100 transition-colors"
-              >
-                GAA GO
-              </a>
+              <a href={rteUrl}   target="_blank" rel="noopener noreferrer" className="flex-1 text-center text-xs font-bold py-2 rounded-lg bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-colors">RTÉ Player</a>
+              <a href={tg4Url}   target="_blank" rel="noopener noreferrer" className="flex-1 text-center text-xs font-bold py-2 rounded-lg bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100 transition-colors">TG4 Player</a>
+              <a href={gaaGoUrl} target="_blank" rel="noopener noreferrer" className="flex-1 text-center text-xs font-bold py-2 rounded-lg bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100 transition-colors">GAA GO</a>
             </div>
-            <p className="text-xs text-gray-400 mt-1.5 text-center">
-              RTÉ &amp; TG4 are free · GAA GO requires a subscription
-            </p>
+            <p className="text-xs text-gray-400 mt-1.5 text-center">RTÉ &amp; TG4 are free · GAA GO requires a subscription</p>
           </div>
-
         </div>
       )}
     </article>
   )
 }
 
+// ─── Grouping helpers ──────────────────────────────────────────────────────
+
+function groupBySeason(results) {
+  const bySeason = {}
+  for (const r of results) {
+    const season = r.season ?? 'Unknown'
+    if (!bySeason[season]) bySeason[season] = {}
+    const wk = weekMondayKey(r.startDate)
+    if (!bySeason[season][wk]) bySeason[season][wk] = []
+    bySeason[season][wk].push(r)
+  }
+  return bySeason
+}
+
 // ─── Page ──────────────────────────────────────────────────────────────────
 
 export default function Results() {
-  const [groupFilter, setGroupFilter] = useState('all')
   const { data: results, isLoading, isError, dataUpdatedAt } = useResults()
+  const { data: gaaData }  = useGAAData()
   const { filter: codeFilter } = useCodeFilter()
 
   const filtered = results.filter(
-    (f) =>
-      (groupFilter === 'all' || f.group === groupFilter) &&
-      (codeFilter  === 'all' || f.code  === codeFilter)
+    (f) => codeFilter === 'all' || f.code === codeFilter
   )
 
-  const byCompetition = filtered.reduce((acc, f) => {
-    const key = f.competition
-    if (!acc[key]) acc[key] = { short: f.competitionShort, items: [] }
-    acc[key].items.push(f)
-    return acc
-  }, {})
+  const bySeason = groupBySeason(filtered)
+  // Seasons newest-first, weeks newest-first within each season
+  const seasonKeys = Object.keys(bySeason).sort((a, b) => b.localeCompare(a))
 
   const emptyMessage = codeFilter === 'football'
     ? 'No football results to show.'
@@ -198,29 +171,6 @@ export default function Results() {
   return (
     <PageWrapper title="Results" titleAction={<CodeToggle />}>
 
-      {/* Group filter */}
-      <div
-        className="flex gap-2 overflow-x-auto pb-2 mb-4 -mx-4 px-4"
-        role="tablist"
-        aria-label="Competition filter"
-      >
-        {COMPETITION_GROUPS.map(({ id, label }) => (
-          <button
-            key={id}
-            role="tab"
-            aria-selected={groupFilter === id}
-            onClick={() => setGroupFilter(id)}
-            className={`shrink-0 px-3 py-1.5 rounded-full text-sm font-bold min-h-[36px] border transition-colors ${
-              groupFilter === id
-                ? 'bg-gaa-green text-white border-gaa-green'
-                : 'bg-white text-gray-600 border-gray-300'
-            }`}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-
       {isLoading && <Spinner label="Loading results…" />}
 
       {isError && (
@@ -229,22 +179,41 @@ export default function Results() {
         </div>
       )}
 
-      {!isLoading && Object.entries(byCompetition).length === 0 && (
+      {!isLoading && filtered.length === 0 && (
         <p className="text-center text-gray-500 text-base py-8">{emptyMessage}</p>
       )}
 
-      {Object.entries(byCompetition).map(([competitionName, group]) => (
-        <section key={competitionName} className="mb-6">
-          <h2 className="text-sm font-bold text-gray-400 uppercase tracking-wide mb-3">
-            {competitionName}
-          </h2>
-          {group.items.map((f) => <ResultCard key={f.id} fixture={f} />)}
-        </section>
-      ))}
+      {seasonKeys.map((season) => {
+        const weekKeys = Object.keys(bySeason[season]).sort((a, b) => b.localeCompare(a))
+        return (
+          <section key={season} className="mb-2">
+            {/* Season header */}
+            <div className="flex items-center gap-3 mb-4">
+              <h2 className="text-base font-black text-gray-800">{season} Season</h2>
+              <div className="flex-1 h-px bg-gray-200" />
+              <span className="text-xs text-gray-400">{filtered.filter(r => r.season === season).length} results</span>
+            </div>
+
+            {weekKeys.map((wk) => {
+              const matches = bySeason[season][wk]
+              return (
+                <section key={wk} className="mb-5">
+                  {/* Week header */}
+                  <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-2">
+                    <span className="w-1 h-3 rounded-full bg-gray-300 shrink-0" aria-hidden="true" />
+                    {formatWeekRange(wk)}
+                  </h3>
+                  {matches.map((f) => <ResultCard key={f.id} fixture={f} />)}
+                </section>
+              )
+            })}
+          </section>
+        )
+      })}
 
       {dataUpdatedAt && (
         <p className="text-xs text-gray-400 text-center mt-4">
-          Source: TheSportsDB · Data updated{' '}
+          Source: TheSportsDB · Season {gaaData?.season ?? '—'} · Updated{' '}
           {new Date(dataUpdatedAt).toLocaleTimeString('en-IE', { hour: '2-digit', minute: '2-digit' })}
         </p>
       )}

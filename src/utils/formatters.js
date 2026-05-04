@@ -15,3 +15,29 @@ export function formatDateGroup(dateStr) {
   if (isYesterday(d)) return 'Yesterday'
   return format(d, 'EEEE d MMMM')
 }
+
+// Returns the ISO date string (YYYY-MM-DD) of the Monday of the week containing dateStr.
+export function weekMondayKey(dateStr) {
+  const d   = new Date(dateStr)
+  const day = d.getUTCDay() || 7          // 1 Mon … 7 Sun
+  const mon = new Date(d)
+  mon.setUTCDate(d.getUTCDate() - day + 1)
+  return mon.toISOString().slice(0, 10)   // YYYY-MM-DD
+}
+
+// "14–20 Jun" or "28 Jun – 4 Jul" when the week crosses a month boundary.
+export function formatWeekRange(mondayIso) {
+  const mon = new Date(mondayIso + 'T00:00:00Z')
+  const sun = new Date(mon)
+  sun.setUTCDate(mon.getUTCDate() + 6)
+
+  const monDay   = mon.getUTCDate()
+  const sunDay   = sun.getUTCDate()
+  const monMonth = mon.toLocaleDateString('en-IE', { month: 'short', timeZone: 'UTC' })
+  const sunMonth = sun.toLocaleDateString('en-IE', { month: 'short', timeZone: 'UTC' })
+
+  if (monMonth === sunMonth) {
+    return `${monDay}–${sunDay} ${sunMonth}`
+  }
+  return `${monDay} ${monMonth} – ${sunDay} ${sunMonth}`
+}
