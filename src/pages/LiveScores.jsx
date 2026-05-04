@@ -3,17 +3,13 @@ import PageWrapper                                  from '../components/layout/P
 import Spinner                                      from '../components/ui/Spinner'
 import CountyColourBadge                            from '../components/ui/CountyColourBadge'
 import CodeIcon                                     from '../components/ui/CodeIcon'
+import CodeSidebar                                  from '../components/ui/CodeSidebar'
 import CodeToggle                                   from '../components/ui/CodeToggle'
 import { useGAAData }                               from '../hooks/useFixtures'
 import { useLiveRss, filterRssForMatch, SOURCE_LABELS } from '../hooks/useLiveRss'
 import { useCodeFilter }                            from '../contexts/CodeFilterContext'
 import { isMatchWindow, getElapsedMinutes, formatTimeAgo } from '../utils/matchStatus'
 import { formatMatchDate }                          from '../utils/formatters'
-
-const CODE_BORDER = {
-  hurling:  'border-l-[3px] border-l-gaa-hurling',
-  football: 'border-l-[3px] border-l-gaa-football',
-}
 
 // ─── Match card ────────────────────────────────────────────────────────────
 
@@ -26,82 +22,84 @@ function LiveCard({ fixture, rssItems, codeFilter }) {
     ? filterRssForMatch(rssItems, fixture.homeTeam, fixture.awayTeam, codeFilter)
     : []
 
-  const borderClass = CODE_BORDER[fixture.code] ?? ''
-
   return (
     <article
-      className={`bg-white border border-gray-200 rounded-xl p-4 mb-3 ${borderClass}`}
+      className="flex bg-white border border-gray-200 rounded-xl mb-3 overflow-hidden"
       aria-live="polite"
       aria-label={`${fixture.homeTeam} versus ${fixture.awayTeam}`}
     >
-      {/* Header row */}
-      <div className="flex items-center gap-1.5 mb-3">
-        <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" aria-hidden="true" />
-        <span className="text-xs font-bold text-red-600 uppercase">
-          In Progress — {elapsed}&apos; (est.)
-        </span>
-        <span className="ml-auto flex items-center gap-1 text-xs text-gray-400">
-          <CodeIcon code={fixture.code} size={12} />
-          {fixture.competitionShort}
-        </span>
-      </div>
+      <CodeSidebar code={fixture.code} />
 
-      {/* Score row */}
-      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-        <div className={`flex items-center justify-end gap-1.5 font-bold text-lg ${homeWin ? 'text-gaa-green' : awayWin ? 'text-red-600' : ''}`}>
-          {fixture.homeTeam}
-          <CountyColourBadge teamName={fixture.homeTeam} />
+      <div className="flex-1 p-4 min-w-0">
+        {/* Header row */}
+        <div className="flex items-center gap-1.5 mb-3">
+          <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse shrink-0" aria-hidden="true" />
+          <span className="text-xs font-bold text-red-600 uppercase">
+            In Progress — {elapsed}&apos; (est.)
+          </span>
+          <span className="ml-auto flex items-center gap-1 text-xs text-gray-400 shrink-0">
+            <CodeIcon code={fixture.code} size={12} />
+            {fixture.competitionShort}
+          </span>
         </div>
 
-        <div className="text-center min-w-[80px]">
-          {fixture.homeScore ? (
-            <>
-              <p className="text-xs text-gray-400 mb-0.5">Last known</p>
-              <p className="text-base font-black tabular-nums">
-                {fixture.homeScore.gp} – {fixture.awayScore?.gp}
-              </p>
-            </>
-          ) : (
-            <p className="text-sm text-gray-400">{formatMatchDate(fixture.startDate)}</p>
-          )}
-        </div>
+        {/* Score row */}
+        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+          <div className={`flex items-center justify-end gap-1.5 font-bold text-lg ${homeWin ? 'text-gaa-green' : awayWin ? 'text-red-600' : ''}`}>
+            {fixture.homeTeam}
+            <CountyColourBadge teamName={fixture.homeTeam} />
+          </div>
 
-        <div className={`flex items-center gap-1.5 font-bold text-lg ${awayWin ? 'text-gaa-green' : homeWin ? 'text-red-600' : ''}`}>
-          <CountyColourBadge teamName={fixture.awayTeam} />
-          {fixture.awayTeam}
-        </div>
-      </div>
-
-      {fixture.venue && (
-        <p className="text-xs text-gray-400 text-center mt-2">{fixture.venue}</p>
-      )}
-
-      {/* RSS news for this match */}
-      {relevant.length > 0 && (
-        <div className="mt-3 pt-3 border-t border-gray-100">
-          <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">
-            Latest updates
-          </p>
-          <ul className="space-y-2">
-            {relevant.map((item, i) => (
-              <li key={i}>
-                <a
-                  href={item.link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm text-gray-800 font-medium leading-snug hover:text-gaa-green block"
-                >
-                  {item.title}
-                </a>
-                <p className="text-xs text-gray-400 mt-0.5">
-                  {SOURCE_LABELS[item.source] ?? item.source}
-                  {item.pubDate && ` · ${formatTimeAgo(item.pubDate)}`}
+          <div className="text-center min-w-[80px]">
+            {fixture.homeScore ? (
+              <>
+                <p className="text-xs text-gray-400 mb-0.5">Last known</p>
+                <p className="text-base font-black tabular-nums">
+                  {fixture.homeScore.gp} – {fixture.awayScore?.gp}
                 </p>
-              </li>
-            ))}
-          </ul>
+              </>
+            ) : (
+              <p className="text-sm text-gray-400">{formatMatchDate(fixture.startDate)}</p>
+            )}
+          </div>
+
+          <div className={`flex items-center gap-1.5 font-bold text-lg ${awayWin ? 'text-gaa-green' : homeWin ? 'text-red-600' : ''}`}>
+            <CountyColourBadge teamName={fixture.awayTeam} />
+            {fixture.awayTeam}
+          </div>
         </div>
-      )}
+
+        {fixture.venue && (
+          <p className="text-xs text-gray-400 text-center mt-2">{fixture.venue}</p>
+        )}
+
+        {/* RSS news for this match */}
+        {relevant.length > 0 && (
+          <div className="mt-3 pt-3 border-t border-gray-100">
+            <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">
+              Latest updates
+            </p>
+            <ul className="space-y-2">
+              {relevant.map((item, i) => (
+                <li key={i}>
+                  <a
+                    href={item.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-gray-800 font-medium leading-snug hover:text-gaa-green block"
+                  >
+                    {item.title}
+                  </a>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    {SOURCE_LABELS[item.source] ?? item.source}
+                    {item.pubDate && ` · ${formatTimeAgo(item.pubDate)}`}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
     </article>
   )
 }
@@ -117,19 +115,14 @@ export default function LiveScores() {
   const liveNow     = allFixtures.filter((f) => isMatchWindow(f))
   const hasLive     = liveNow.length > 0
 
-  // Apply code filter
-  const filtered = filter === 'all'
-    ? liveNow
-    : liveNow.filter((f) => f.code === filter)
+  const filtered = filter === 'all' ? liveNow : liveNow.filter((f) => f.code === filter)
 
-  // RSS polling — only active when there are live matches
   const { data: rssData, dataUpdatedAt: rssUpdatedAt } = useLiveRss(hasLive)
-  const rssItems    = rssData?.items ?? []
-  const rssSeconds  = rssUpdatedAt
+  const rssItems   = rssData?.items ?? []
+  const rssSeconds = rssUpdatedAt
     ? Math.floor((Date.now() - new Date(rssUpdatedAt).getTime()) / 1000)
     : null
 
-  // Seconds-ago counter for fixture data
   useEffect(() => {
     setSecondsAgo(0)
     const id = setInterval(() => setSecondsAgo((s) => s + 1), 1000)
@@ -145,15 +138,10 @@ export default function LiveScores() {
   return (
     <PageWrapper title="Live Scores" titleAction={<CodeToggle />}>
 
-      {/* Data freshness indicator */}
       <p className="text-sm text-gray-500 mb-4" aria-live="polite">
-        {dataUpdatedAt
-          ? `Fixtures refreshed ${secondsAgo}s ago`
-          : 'Loading…'}
+        {dataUpdatedAt ? `Fixtures refreshed ${secondsAgo}s ago` : 'Loading…'}
         {hasLive && rssSeconds !== null && (
-          <span className="ml-2 text-gray-400">
-            · News checked {rssSeconds}s ago
-          </span>
+          <span className="ml-2 text-gray-400">· News checked {rssSeconds}s ago</span>
         )}
       </p>
 
@@ -174,7 +162,6 @@ export default function LiveScores() {
         ))}
       </div>
 
-      {/* Info banner */}
       <div className="mt-6 bg-amber-50 border border-amber-200 rounded-xl p-4">
         <p className="text-sm font-bold text-amber-800 mb-2">About live scores</p>
         <p className="text-xs text-amber-700 mb-2">
@@ -184,8 +171,7 @@ export default function LiveScores() {
         </p>
         <p className="text-xs text-amber-700">
           During match windows, the latest news headlines from those sources are checked
-          every 2 minutes and shown inside each match card above. True live in-game
-          scores are something we&apos;re actively working on bringing to the app.
+          every 2 minutes and shown inside each match card above.
         </p>
       </div>
 

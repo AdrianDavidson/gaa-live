@@ -4,16 +4,12 @@ import PageWrapper             from '../components/layout/PageWrapper'
 import Spinner                 from '../components/ui/Spinner'
 import CountyColourBadge       from '../components/ui/CountyColourBadge'
 import CodeIcon                from '../components/ui/CodeIcon'
+import CodeSidebar             from '../components/ui/CodeSidebar'
 import CodeToggle              from '../components/ui/CodeToggle'
 import { useResults, useGAAData } from '../hooks/useFixtures'
 import { useCodeFilter }       from '../contexts/CodeFilterContext'
 import { winnerGradient }      from '../utils/countyColours'
 import { formatMatchDate, weekMondayKey, formatWeekRange } from '../utils/formatters'
-
-const CODE_BORDER = {
-  hurling:  'border-l-[3px] border-l-gaa-hurling',
-  football: 'border-l-[3px] border-l-gaa-football',
-}
 
 // ─── Result card ───────────────────────────────────────────────────────────
 
@@ -31,104 +27,104 @@ function ResultCard({ fixture }) {
   const tg4Url        = `https://www.tg4.ie/en/player/categories/sport-tv-player/?series=GAA+2025&genre=Sport`
   const gaaGoUrl      = `https://www.gaago.ie/`
 
-  const borderClass = CODE_BORDER[fixture.code] ?? ''
-
   return (
     <article
-      className={`bg-white border border-gray-200 rounded-xl p-4 mb-3 overflow-hidden ${borderClass}`}
-      style={bgImage ? { backgroundImage: bgImage } : undefined}
+      className="flex bg-white border border-gray-200 rounded-xl mb-3 overflow-hidden"
       aria-label={`Result: ${fixture.homeTeam} versus ${fixture.awayTeam}`}
     >
-      {/* Competition row */}
-      <div className="flex justify-between items-center mb-2">
-        <span className="text-xs font-bold text-gaa-green uppercase tracking-wide flex items-center gap-1">
-          {fixture.leagueBadge
-            ? <img src={fixture.leagueBadge} alt="" className="w-4 h-4 object-contain shrink-0" aria-hidden="true" />
-            : <CodeIcon code={fixture.code} size={13} className="shrink-0" />
-          }
-          {fixture.competitionShort ?? fixture.competition}
-        </span>
-        <span className="text-xs text-gray-400">{formatMatchDate(fixture.startDate)}</span>
-      </div>
+      <CodeSidebar code={fixture.code} />
 
-      {/* Score grid */}
-      <div className="grid grid-cols-[1fr_auto_1fr] items-start gap-2">
-
-        <div className="text-right">
-          <div className="flex items-center justify-end gap-1.5 mb-0.5">
-            <p className="font-bold text-base leading-tight text-gray-900">{fixture.homeTeam}</p>
-            <CountyColourBadge teamName={fixture.homeTeam} />
-          </div>
-          {fixture.homeScore && (
-            <p className="text-xl font-black tabular-nums text-gray-800 flex items-center justify-end gap-1">
-              {showIcon && homeWin && <Trophy size={13} className="text-gaa-green shrink-0" />}
-              {fixture.homeScore.gp}
-              <span className="text-sm font-bold ml-1 opacity-60">({fixture.homeScore.total})</span>
-            </p>
-          )}
-        </div>
-
-        <div className="text-center text-gray-300 font-bold text-lg px-1 pt-1">–</div>
-
-        <div className="text-left">
-          <div className="flex items-center gap-1.5 mb-0.5">
-            <CountyColourBadge teamName={fixture.awayTeam} />
-            <p className="font-bold text-base leading-tight text-gray-900">{fixture.awayTeam}</p>
-          </div>
-          {fixture.awayScore && (
-            <p className="text-xl font-black tabular-nums text-gray-800 flex items-center gap-1">
-              {fixture.awayScore.gp}
-              <span className="text-sm font-bold ml-1 opacity-60">({fixture.awayScore.total})</span>
-              {showIcon && awayWin && <Trophy size={13} className="text-gaa-green shrink-0" />}
-            </p>
-          )}
-        </div>
-
-      </div>
-
-      {fixture.venue && (
-        <p className="text-xs text-gray-400 mt-2 flex items-center justify-center gap-1">
-          <MapPin size={11} className="shrink-0" aria-hidden="true" />
-          {fixture.venue}
-        </p>
-      )}
-
-      {/* Watch — tap to expand */}
-      <button
-        onClick={() => setExpanded((v) => !v)}
-        className="mt-3 w-full flex items-center justify-center gap-1.5 text-xs font-bold text-gray-400 hover:text-gaa-green transition-colors min-h-[36px]"
-        aria-expanded={expanded}
+      {/* Content — winner gradient applied here only, not over the sidebar */}
+      <div
+        className="flex-1 p-4 min-w-0"
+        style={bgImage ? { backgroundImage: bgImage } : undefined}
       >
-        <PlayCircle size={13} />
-        Watch on YouTube
-        {expanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-      </button>
-
-      {expanded && (
-        <div className="mt-2 space-y-3">
-          <div>
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-1.5">Highlights</p>
-            <a
-              href={highlightsUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-center gap-1.5 text-xs font-bold py-2 rounded-lg bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 transition-colors"
-            >
-              <PlayCircle size={13} />
-              Search YouTube
-            </a>
-          </div>
-          <div>
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-1.5">Full Match Replay</p>
-            <div className="flex gap-2">
-              <a href={rteUrl}   target="_blank" rel="noopener noreferrer" className="flex-1 text-center text-xs font-bold py-2 rounded-lg bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-colors">RTÉ Player</a>
-              <a href={tg4Url}   target="_blank" rel="noopener noreferrer" className="flex-1 text-center text-xs font-bold py-2 rounded-lg bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100 transition-colors">TG4 Player</a>
-              <a href={gaaGoUrl} target="_blank" rel="noopener noreferrer" className="flex-1 text-center text-xs font-bold py-2 rounded-lg bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100 transition-colors">GAA GO</a>
-            </div>
-            <p className="text-xs text-gray-400 mt-1.5 text-center">RTÉ &amp; TG4 are free · GAA GO requires a subscription</p>
-          </div>
+        {/* Competition row */}
+        <div className="flex justify-between items-center mb-2">
+          <span className="text-xs font-bold text-gaa-green uppercase tracking-wide flex items-center gap-1 min-w-0">
+            {fixture.leagueBadge
+              ? <img src={fixture.leagueBadge} alt="" className="w-4 h-4 object-contain shrink-0" aria-hidden="true" />
+              : <CodeIcon code={fixture.code} size={13} className="shrink-0" />
+            }
+            <span className="truncate">{fixture.competitionShort ?? fixture.competition}</span>
+          </span>
+          <span className="text-xs text-gray-400 shrink-0 ml-2">{formatMatchDate(fixture.startDate)}</span>
         </div>
-      )}
+
+        {/* Score grid */}
+        <div className="grid grid-cols-[1fr_auto_1fr] items-start gap-2">
+
+          <div className="text-right">
+            <div className="flex items-center justify-end gap-1.5 mb-0.5">
+              <p className="font-bold text-base leading-tight text-gray-900">{fixture.homeTeam}</p>
+              <CountyColourBadge teamName={fixture.homeTeam} />
+            </div>
+            {fixture.homeScore && (
+              <p className="text-xl font-black tabular-nums text-gray-800 flex items-center justify-end gap-1">
+                {showIcon && homeWin && <Trophy size={13} className="text-gaa-green shrink-0" />}
+                {fixture.homeScore.gp}
+                <span className="text-sm font-bold ml-1 opacity-60">({fixture.homeScore.total})</span>
+              </p>
+            )}
+          </div>
+
+          <div className="text-center text-gray-300 font-bold text-lg px-1 pt-1">–</div>
+
+          <div className="text-left">
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <CountyColourBadge teamName={fixture.awayTeam} />
+              <p className="font-bold text-base leading-tight text-gray-900">{fixture.awayTeam}</p>
+            </div>
+            {fixture.awayScore && (
+              <p className="text-xl font-black tabular-nums text-gray-800 flex items-center gap-1">
+                {fixture.awayScore.gp}
+                <span className="text-sm font-bold ml-1 opacity-60">({fixture.awayScore.total})</span>
+                {showIcon && awayWin && <Trophy size={13} className="text-gaa-green shrink-0" />}
+              </p>
+            )}
+          </div>
+
+        </div>
+
+        {fixture.venue && (
+          <p className="text-xs text-gray-400 mt-2 flex items-center justify-center gap-1">
+            <MapPin size={11} className="shrink-0" aria-hidden="true" />
+            {fixture.venue}
+          </p>
+        )}
+
+        {/* Watch — tap to expand */}
+        <button
+          onClick={() => setExpanded((v) => !v)}
+          className="mt-3 w-full flex items-center justify-center gap-1.5 text-xs font-bold text-gray-400 hover:text-gaa-green transition-colors min-h-[36px]"
+          aria-expanded={expanded}
+        >
+          <PlayCircle size={13} />
+          Watch on YouTube
+          {expanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+        </button>
+
+        {expanded && (
+          <div className="mt-2 space-y-3">
+            <div>
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-1.5">Highlights</p>
+              <a href={highlightsUrl} target="_blank" rel="noopener noreferrer"
+                className="flex items-center justify-center gap-1.5 text-xs font-bold py-2 rounded-lg bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 transition-colors">
+                <PlayCircle size={13} /> Search YouTube
+              </a>
+            </div>
+            <div>
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-1.5">Full Match Replay</p>
+              <div className="flex gap-2">
+                <a href={rteUrl}   target="_blank" rel="noopener noreferrer" className="flex-1 text-center text-xs font-bold py-2 rounded-lg bg-blue-50   text-blue-700   border border-blue-200   hover:bg-blue-100   transition-colors">RTÉ Player</a>
+                <a href={tg4Url}   target="_blank" rel="noopener noreferrer" className="flex-1 text-center text-xs font-bold py-2 rounded-lg bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100 transition-colors">TG4 Player</a>
+                <a href={gaaGoUrl} target="_blank" rel="noopener noreferrer" className="flex-1 text-center text-xs font-bold py-2 rounded-lg bg-gray-50   text-gray-600   border border-gray-200   hover:bg-gray-100   transition-colors">GAA GO</a>
+              </div>
+              <p className="text-xs text-gray-400 mt-1.5 text-center">RTÉ &amp; TG4 are free · GAA GO requires a subscription</p>
+            </div>
+          </div>
+        )}
+      </div>
     </article>
   )
 }
@@ -151,15 +147,14 @@ function groupBySeason(results) {
 
 export default function Results() {
   const { data: results, isLoading, isError, dataUpdatedAt } = useResults()
-  const { data: gaaData }  = useGAAData()
+  const { data: gaaData }      = useGAAData()
   const { filter: codeFilter } = useCodeFilter()
 
   const filtered = results.filter(
     (f) => codeFilter === 'all' || f.code === codeFilter
   )
 
-  const bySeason = groupBySeason(filtered)
-  // Seasons newest-first, weeks newest-first within each season
+  const bySeason   = groupBySeason(filtered)
   const seasonKeys = Object.keys(bySeason).sort((a, b) => b.localeCompare(a))
 
   const emptyMessage = codeFilter === 'football'
@@ -187,7 +182,6 @@ export default function Results() {
         const weekKeys = Object.keys(bySeason[season]).sort((a, b) => b.localeCompare(a))
         return (
           <section key={season} className="mb-2">
-            {/* Season header */}
             <div className="flex items-center gap-3 mb-4">
               <h2 className="text-base font-black text-gray-800">{season} Season</h2>
               <div className="flex-1 h-px bg-gray-200" />
@@ -198,7 +192,6 @@ export default function Results() {
               const matches = bySeason[season][wk]
               return (
                 <section key={wk} className="mb-5">
-                  {/* Week header */}
                   <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-2">
                     <span className="w-1 h-3 rounded-full bg-gray-300 shrink-0" aria-hidden="true" />
                     {formatWeekRange(wk)}

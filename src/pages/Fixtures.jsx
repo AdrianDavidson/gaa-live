@@ -3,15 +3,11 @@ import PageWrapper               from '../components/layout/PageWrapper'
 import Spinner                   from '../components/ui/Spinner'
 import CountyColourBadge         from '../components/ui/CountyColourBadge'
 import CodeIcon                  from '../components/ui/CodeIcon'
+import CodeSidebar               from '../components/ui/CodeSidebar'
 import CodeToggle                from '../components/ui/CodeToggle'
 import { useFixtures }           from '../hooks/useFixtures'
 import { useCodeFilter }         from '../contexts/CodeFilterContext'
 import { formatMatchDate, formatDateGroup } from '../utils/formatters'
-
-const CODE_BORDER = {
-  hurling:  'border-l-[3px] border-l-gaa-hurling',
-  football: 'border-l-[3px] border-l-gaa-football',
-}
 
 function groupByDate(fixtures) {
   return fixtures.reduce((acc, f) => {
@@ -23,43 +19,45 @@ function groupByDate(fixtures) {
 }
 
 function FixtureCard({ fixture }) {
-  const borderClass = CODE_BORDER[fixture.code] ?? ''
-
   return (
     <article
-      className={`bg-white border border-gray-200 rounded-xl p-4 mb-3 ${borderClass}`}
+      className="flex bg-white border border-gray-200 rounded-xl mb-3 overflow-hidden"
       aria-label={`${fixture.homeTeam} versus ${fixture.awayTeam}`}
     >
-      <div className="flex justify-between items-start mb-2">
-        <span className="text-xs font-bold text-gaa-green uppercase tracking-wide flex items-center gap-1 min-w-0 flex-1 pr-2 truncate">
-          {fixture.leagueBadge
-            ? <img src={fixture.leagueBadge} alt="" className="w-4 h-4 object-contain shrink-0" aria-hidden="true" />
-            : <CodeIcon code={fixture.code} size={13} className="shrink-0" />
-          }
-          {fixture.competitionShort ?? fixture.competition}
-          {fixture.season && <span className="text-gray-400 font-normal normal-case ml-1">{fixture.season}</span>}
-        </span>
-        <span className="text-xs text-gray-400 shrink-0 font-medium">{formatMatchDate(fixture.startDate)}</span>
-      </div>
+      <CodeSidebar code={fixture.code} />
 
-      <div className="flex items-center justify-between font-bold text-lg gap-2">
-        <span className="flex-1 flex items-center gap-1.5">
-          <CountyColourBadge teamName={fixture.homeTeam} />
-          {fixture.homeTeam}
-        </span>
-        <span className="text-gray-400 font-normal text-base shrink-0">vs</span>
-        <span className="flex-1 flex items-center justify-end gap-1.5">
-          {fixture.awayTeam}
-          <CountyColourBadge teamName={fixture.awayTeam} />
-        </span>
-      </div>
+      <div className="flex-1 p-4 min-w-0">
+        <div className="flex justify-between items-start mb-2">
+          <span className="text-xs font-bold text-gaa-green uppercase tracking-wide flex items-center gap-1 min-w-0 flex-1 pr-2 truncate">
+            {fixture.leagueBadge
+              ? <img src={fixture.leagueBadge} alt="" className="w-4 h-4 object-contain shrink-0" aria-hidden="true" />
+              : <CodeIcon code={fixture.code} size={13} className="shrink-0" />
+            }
+            {fixture.competitionShort ?? fixture.competition}
+            {fixture.season && <span className="text-gray-400 font-normal normal-case ml-1">{fixture.season}</span>}
+          </span>
+          <span className="text-xs text-gray-400 shrink-0 font-medium">{formatMatchDate(fixture.startDate)}</span>
+        </div>
 
-      {fixture.venue && (
-        <p className="text-xs text-gray-400 mt-2 flex items-center gap-1 truncate">
-          <MapPin size={11} className="shrink-0" aria-hidden="true" />
-          {fixture.venue}
-        </p>
-      )}
+        <div className="flex items-center justify-between font-bold text-lg gap-2">
+          <span className="flex-1 flex items-center gap-1.5 min-w-0">
+            <CountyColourBadge teamName={fixture.homeTeam} />
+            <span className="truncate">{fixture.homeTeam}</span>
+          </span>
+          <span className="text-gray-400 font-normal text-base shrink-0">vs</span>
+          <span className="flex-1 flex items-center justify-end gap-1.5 min-w-0">
+            <span className="truncate">{fixture.awayTeam}</span>
+            <CountyColourBadge teamName={fixture.awayTeam} />
+          </span>
+        </div>
+
+        {fixture.venue && (
+          <p className="text-xs text-gray-400 mt-2 flex items-center gap-1 truncate">
+            <MapPin size={11} className="shrink-0" aria-hidden="true" />
+            {fixture.venue}
+          </p>
+        )}
+      </div>
     </article>
   )
 }
@@ -78,7 +76,7 @@ export default function Fixtures() {
     ? 'No upcoming football fixtures. Check back when the new season kicks off.'
     : codeFilter === 'hurling'
       ? 'No upcoming hurling fixtures. Check back when the new season gets underway.'
-      : 'No upcoming fixtures found. Check back when the new season gets underway.'
+      : 'No upcoming fixtures. Check back when the new season gets underway.'
 
   return (
     <PageWrapper title="Fixtures" titleAction={<CodeToggle />}>
