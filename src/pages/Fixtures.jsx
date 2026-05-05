@@ -73,7 +73,7 @@ export default function Fixtures() {
   const grouped = groupByDate(filtered)
 
   const emptyMessage = codeFilter === 'football'
-    ? 'No upcoming football fixtures. Check back when the new season kicks off.'
+    ? 'No football fixtures scheduled yet — the summer championship draw typically appears 2–4 weeks before each round.'
     : codeFilter === 'hurling'
       ? 'No upcoming hurling fixtures. Check back when the new season gets underway.'
       : 'No upcoming fixtures. Check back when the new season gets underway.'
@@ -90,7 +90,26 @@ export default function Fixtures() {
       )}
 
       {!isLoading && Object.entries(grouped).length === 0 && (
-        <p className="text-center text-gray-500 text-base py-8">{emptyMessage}</p>
+        <>
+          <p className="text-center text-gray-500 text-base py-6">{emptyMessage}</p>
+          {codeFilter === 'football' && (
+            <div className="bg-gaa-football-soft border border-gaa-football/30 rounded-xl p-4 text-sm text-gaa-football">
+              <p className="font-bold mb-1">Where to find football fixtures</p>
+              <p className="text-xs text-gaa-football/80 mb-2">
+                TheSportsDB (our data source) adds fixtures roughly 2–4 weeks before each round.
+                For the full schedule now, visit GAA.ie directly.
+              </p>
+              <a
+                href="https://www.gaa.ie/fixtures-results/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-block text-xs font-bold underline"
+              >
+                View all fixtures on GAA.ie →
+              </a>
+            </div>
+          )}
+        </>
       )}
 
       {Object.entries(grouped).map(([key, group]) => (

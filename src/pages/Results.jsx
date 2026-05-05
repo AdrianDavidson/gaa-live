@@ -62,8 +62,10 @@ function ResultCard({ fixture }) {
             {fixture.homeScore && (
               <p className="text-xl font-black tabular-nums text-gray-800 flex items-center justify-end gap-1">
                 {showIcon && homeWin && <Trophy size={13} className="text-gaa-green shrink-0" />}
-                {fixture.homeScore.gp}
-                <span className="text-sm font-bold ml-1 opacity-60">({fixture.homeScore.total})</span>
+                {fixture.homeScore.gp ?? fixture.homeScore.total}
+                {fixture.homeScore.gp != null && (
+                  <span className="text-sm font-bold ml-1 opacity-60">({fixture.homeScore.total})</span>
+                )}
               </p>
             )}
           </div>
@@ -77,8 +79,10 @@ function ResultCard({ fixture }) {
             </div>
             {fixture.awayScore && (
               <p className="text-xl font-black tabular-nums text-gray-800 flex items-center gap-1">
-                {fixture.awayScore.gp}
-                <span className="text-sm font-bold ml-1 opacity-60">({fixture.awayScore.total})</span>
+                {fixture.awayScore.gp ?? fixture.awayScore.total}
+                {fixture.awayScore.gp != null && (
+                  <span className="text-sm font-bold ml-1 opacity-60">({fixture.awayScore.total})</span>
+                )}
                 {showIcon && awayWin && <Trophy size={13} className="text-gaa-green shrink-0" />}
               </p>
             )}

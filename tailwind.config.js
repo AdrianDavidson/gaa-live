@@ -14,12 +14,12 @@ export default {
           polled: '#d97706',
           nodata: '#6b7280',
           football: {
-            DEFAULT: '#2D7A3E',  // muted GAA green
-            soft:    '#E8F2EA',
+            DEFAULT: '#1A6B35',  // forest green — Kerry, the pitch, the GAA
+            soft:    '#E3F2E9',
           },
           hurling: {
-            DEFAULT: '#C97B0F',  // amber / sliotar
-            soft:    '#FBF0DC',
+            DEFAULT: '#D4770A',  // saffron/amber — the sliotar, Tipperary, Wexford
+            soft:    '#FEF0DC',
           },
         },
       },

@@ -31,19 +31,30 @@ function cleanTeamName(raw) {
     .trim()
 }
 
-function parseResult(strResult) {
-  if (!strResult) return { home: null, away: null }
-  const parts = strResult.match(/(\d+-\d+\s*\(\d+\))\s*(\d+-\d+\s*\(\d+\))/)
-  if (!parts) return { home: null, away: null }
-  const parse = (s) => {
-    const m = s.match(/(\d+-\d+)\s*\((\d+)\)/)
-    return m ? { gp: m[1], total: parseInt(m[2], 10) } : null
+function parseResult(strResult, intHome, intAway) {
+  if (strResult) {
+    const parts = strResult.match(/(\d+-\d+\s*\(\d+\))\s*(\d+-\d+\s*\(\d+\))/)
+    if (parts) {
+      const parse = (s) => {
+        const m = s.match(/(\d+-\d+)\s*\((\d+)\)/)
+        return m ? { gp: m[1], total: parseInt(m[2], 10) } : null
+      }
+      return { home: parse(parts[1]), away: parse(parts[2]) }
+    }
   }
-  return { home: parse(parts[1]), away: parse(parts[2]) }
+  const h = parseInt(intHome, 10)
+  const a = parseInt(intAway, 10)
+  if (!isNaN(h) && !isNaN(a)) {
+    return {
+      home: { gp: null, total: h },
+      away: { gp: null, total: a },
+    }
+  }
+  return { home: null, away: null }
 }
 
 function normalizeEvent(event, competition) {
-  const scores     = parseResult(event.strResult)
+  const scores     = parseResult(event.strResult, event.intHomeScore, event.intAwayScore)
   const isFinished = event.strStatus === 'Match Finished' || event.intHomeScore !== null
   const time       = event.strTime?.substring(0, 5) ?? '00:00'
   return {
