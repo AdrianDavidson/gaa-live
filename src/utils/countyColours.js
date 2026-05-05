@@ -58,6 +58,77 @@ export function getTextColor(hex) {
 
 export const ALL_COUNTIES = Object.keys(COUNTY_COLOURS).sort()
 
+const WP = 'https://en.wikipedia.org/wiki/Special:FilePath'
+const WC = 'https://commons.wikimedia.org/wiki/Special:FilePath'
+
+// GAA county colours strips from Wikimedia Commons (SVG stripe patterns)
+export const COUNTY_FLAGS = {
+  Antrim:    `${WC}/Colours_of_Antrim.svg`,
+  Armagh:    `${WC}/Colours_of_Armagh.svg`,
+  Carlow:    `${WC}/Colours_of_Carlow.svg`,
+  Clare:     `${WC}/Colours_of_Clare.svg`,
+  Cork:      `${WC}/Colours_of_Cork.svg`,
+  Derry:     `${WC}/Colours_of_Derry.svg`,
+  Donegal:   `${WC}/Colours_of_Donegal_GAA.svg`,
+  Down:      `${WC}/Colours_of_Down.svg`,
+  Dublin:    `${WC}/Colours_of_Dublin.svg`,
+  Galway:    `${WC}/Colours_of_Galway.svg`,
+  Kerry:     `${WC}/Colours_of_Kerry_GAA.svg`,
+  Kildare:   `${WC}/Colours_of_Kildare.svg`,
+  Kilkenny:  `${WC}/Colours_of_Kilkenny.svg`,
+  Laois:     `${WC}/Colours_of_Laois.svg`,
+  Leitrim:   `${WC}/Colours_of_Leitrim.svg`,
+  Limerick:  `${WC}/Limerick_colours.PNG`,
+  Longford:  `${WC}/Colours_of_Longford_GAA.svg`,
+  Mayo:      `${WC}/Colours_of_Mayo.svg`,
+  Meath:     `${WC}/Colours_of_Meath_GAA.svg`,
+  Monaghan:  `${WC}/Colours_of_Monaghan.svg`,
+  Offaly:    `${WC}/Colours_of_Offaly.svg`,
+  Roscommon: `${WC}/Colours_of_Roscommon.svg`,
+  Sligo:     `${WC}/Colours_of_Sligo.svg`,
+  Tipperary: `${WC}/Colours_of_Tipperary.svg`,
+  Tyrone:    `${WC}/Colours_of_Tyrone.svg`,
+  Wexford:   `${WC}/Colours_of_Wexford.svg`,
+  Wicklow:   `${WC}/Colours_of_Wicklow.svg`,
+  // Cavan, Fermanagh, Louth, Waterford, Westmeath have no confirmed colours SVG on Commons
+}
+
+// Official GAA county crests from Wikipedia (fair-use logos)
+export const COUNTY_CRESTS = {
+  Antrim:    `${WP}/Antrim_GAA_crest.png`,
+  Armagh:    `${WP}/Armagh_GAA_crest.png`,
+  Carlow:    `${WP}/Carlow_GAA_crest.png`,
+  Cavan:     `${WP}/Cavan_GAA_crest.png`,
+  Clare:     `${WP}/Clare_GAA_crest.png`,
+  Cork:      `${WP}/Cork_GAA_crest.svg`,
+  Derry:     `${WP}/Derry_GAA_crest.jpg`,
+  Donegal:   `${WP}/Donegal_GAA_crest.png`,
+  Down:      `${WP}/Down_GAA_crest.png`,
+  Dublin:    `${WP}/Dublin_GAA_crest.png`,
+  Fermanagh: `${WP}/Fermanagh_GAA_crest.svg`,
+  Galway:    `${WP}/Galway_GAA_crest_2013.jpg`,
+  Kerry:     `${WP}/Kerry_gaa_crest.png`,
+  Kildare:   `${WP}/Kildare_GAA_crest.png`,
+  Kilkenny:  `${WP}/Kilkenny_GAA_Crest.jpeg`,
+  Laois:     `${WP}/Laois_GAA_Crest_2005.jpeg`,
+  Leitrim:   `${WP}/Leitrim_GAA_crest_2007.gif`,
+  Limerick:  `${WP}/Limerick_GAA_crest.jpg`,
+  Longford:  `${WP}/Longford-GAA.png`,
+  Louth:     `${WP}/Louth_GAA_crest.jpg`,
+  Mayo:      `${WP}/Mayo_GAA_crest.jpg`,
+  Meath:     `${WP}/Meath_GAA_crest.svg`,
+  Monaghan:  `${WP}/Monaghan_GAA_crest.jpg`,
+  Offaly:    `${WP}/Offaly_GAA_crest.jpg`,
+  Roscommon: `${WP}/Roscommon_GAA_crest.svg`,
+  Sligo:     `${WP}/Sligo_GAA_crest.svg`,
+  Tipperary: `${WP}/Tipperary_GAA_crest.svg`,
+  Tyrone:    `${WP}/Tyrone_gaa_logo.png`,
+  Waterford: `${WP}/Waterford_GAA_crest.svg`,
+  Westmeath: `${WP}/Westmeath_GAA_crest.jpg`,
+  Wexford:   `${WP}/Wexford_GAA_crest.svg`,
+  Wicklow:   `${WP}/Wicklow_gaa_crest.png`,
+}
+
 // Returns a CSS gradient string for a result card background.
 // Solid county colours sit in the bottom corner of the winning side — no opacity.
 // Home win → bottom-left corner. Away win → bottom-right corner.

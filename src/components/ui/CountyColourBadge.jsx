@@ -1,14 +1,30 @@
-import { useId } from 'react'
-import { COUNTY_COLOURS, COUNTY_ABBREV, getTextColor } from '../../utils/countyColours'
+import { useState, useId } from 'react'
+import { COUNTY_COLOURS, COUNTY_ABBREV, COUNTY_CRESTS, getTextColor } from '../../utils/countyColours'
 
 export default function CountyColourBadge({ teamName }) {
-  const colours = COUNTY_COLOURS[teamName]
+  const [imgFailed, setImgFailed] = useState(false)
   const uid     = useId()
+  const colours = COUNTY_COLOURS[teamName]
+
   if (!colours) return null
 
-  const abbrev  = COUNTY_ABBREV[teamName] ?? teamName.slice(0, 3).toUpperCase()
-  const textCol = getTextColor(colours.primary)
-  const clipId  = `sc-${uid.replace(/:/g, '')}`
+  const crestUrl = COUNTY_CRESTS[teamName]
+  const abbrev   = COUNTY_ABBREV[teamName] ?? teamName.slice(0, 3).toUpperCase()
+  const textCol  = getTextColor(colours.primary)
+  const clipId   = `sc-${uid.replace(/:/g, '')}`
+
+  if (crestUrl && !imgFailed) {
+    return (
+      <img
+        src={crestUrl}
+        alt={`${teamName} GAA crest`}
+        width={22}
+        height={26}
+        className="shrink-0 object-contain"
+        onError={() => setImgFailed(true)}
+      />
+    )
+  }
 
   return (
     <svg
@@ -20,35 +36,26 @@ export default function CountyColourBadge({ teamName }) {
       className="shrink-0"
     >
       <defs>
-        {/* Shield silhouette used as a clip path for the diagonal fill */}
         <clipPath id={clipId}>
           <path d="M2,2 L28,2 L28,21 Q28,31 15,34 Q2,31 2,21 Z" />
         </clipPath>
       </defs>
-
-      {/* Shield body — primary county colour */}
       <path
         d="M2,2 L28,2 L28,21 Q28,31 15,34 Q2,31 2,21 Z"
         fill={colours.primary}
       />
-
-      {/* Diagonal secondary fill — top-right triangle, clipped to shield */}
       <polygon
         points="28,2 28,23 2,2"
         fill={colours.secondary}
         opacity="0.6"
         clipPath={`url(#${clipId})`}
       />
-
-      {/* Thin outline for definition */}
       <path
         d="M2,2 L28,2 L28,21 Q28,31 15,34 Q2,31 2,21 Z"
         fill="none"
         stroke="rgba(0,0,0,0.18)"
         strokeWidth="1.5"
       />
-
-      {/* County abbreviation — centred in the lower body of the shield */}
       <text
         x="15"
         y="21"
