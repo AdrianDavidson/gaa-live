@@ -25,15 +25,14 @@ function LiveTab() {
 
   useEffect(() => {
     const today = new Date().toISOString().split('T')[0]
-    fetch(`/api/games?date=${today}`).then((r) => r.json()).then(setGames)
+    const loadGames = () => fetch(`/api/games?date=${today}`).then((r) => r.json()).then((d) => setGames(Array.isArray(d) ? d : []))
+    loadGames()
 
     const ch = supabase
       .channel('admin-score-updates')
       .on('postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'score_updates' },
-        () => {
-          fetch(`/api/games?date=${today}`).then((r) => r.json()).then(setGames)
-        }
+        loadGames
       )
       .subscribe()
 
@@ -86,7 +85,7 @@ function GamesTab() {
     supabase.from('competitions').select('id, short_name').order('short_name').then(({ data }) => setComps(data ?? []))
     supabase.from('pros').select('id, name').order('name').then(({ data }) => setPros(data ?? []))
     const today = new Date().toISOString().split('T')[0]
-    fetch(`/api/games?date=${today}`).then((r) => r.json()).then(setGames)
+    fetch(`/api/games?date=${today}`).then((r) => r.json()).then((d) => setGames(Array.isArray(d) ? d : []))
   }, [])
 
   async function submit(e) {
@@ -97,7 +96,7 @@ function GamesTab() {
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body:    JSON.stringify(form),
     })
-    if (res.ok) { setMsg('Game added'); const today = new Date().toISOString().split('T')[0]; fetch(`/api/games?date=${today}`).then((r) => r.json()).then(setGames) }
+    if (res.ok) { setMsg('Game added'); const today = new Date().toISOString().split('T')[0]; fetch(`/api/games?date=${today}`).then((r) => r.json()).then((d) => setGames(Array.isArray(d) ? d : [])) }
     else setMsg('Error — check fields')
   }
 
