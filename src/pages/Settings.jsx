@@ -1,7 +1,7 @@
 import { useState }              from 'react'
 import { Link }                  from 'react-router-dom'
-import { useAuth, useUser, UserButton, SignInButton } from '@clerk/react'
-import { X, Plus, ChevronRight } from 'lucide-react'
+import { useAuth, UserButton, SignInButton, SignUpButton } from '@clerk/react'
+import { X, Plus, ChevronRight, CloudUpload } from 'lucide-react'
 import PageWrapper                from '../components/layout/PageWrapper'
 import NotificationToggle         from '../components/notifications/NotificationToggle'
 import { useAppStore }            from '../store/appStore'
@@ -72,11 +72,23 @@ export default function Settings() {
   const [showClubPicker, setShowClubPicker]       = useState(false)
   const [showFollowPicker, setShowFollowPicker]   = useState(false)
 
-  const { isSignedIn }     = useAuth()
-  const { setHomeClub }    = useAppStore()
-  const { data: clubs = [] } = useClubs()
-  const theme              = useClubTheme()
+  const { isSignedIn, getToken } = useAuth()
+  const { setHomeClub }          = useAppStore()
+  const { data: clubs = [] }     = useClubs()
+  const theme                    = useClubTheme()
   const { followedClubs, followClub, unfollowClub } = useClubNotifications()
+
+  async function saveHomeClub(club) {
+    setHomeClub(club.id)
+    if (isSignedIn) {
+      const token = await getToken()
+      await fetch('/api/user/profile', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body:    JSON.stringify({ homeClubId: club.id }),
+      })
+    }
+  }
 
   return (
     <PageWrapper title="Settings">
@@ -114,11 +126,27 @@ export default function Settings() {
 
         {isSignedIn
           ? <div className="mt-3 flex items-center gap-2"><UserButton /><span className="text-sm text-gray-500">Account</span></div>
-          : <div className="mt-3">
-              <SignInButton mode="modal">
-                <button className="text-xs font-bold text-gaa-minor">Sign in to sync your preferences →</button>
-              </SignInButton>
+          : (
+            <div className="mt-4 rounded-xl bg-blue-50 border border-blue-100 p-4 flex gap-3 items-start">
+              <CloudUpload size={20} className="text-blue-500 shrink-0 mt-0.5" aria-hidden="true" />
+              <div className="flex-1">
+                <p className="text-sm font-bold text-blue-800 mb-0.5">Save your club across devices</p>
+                <p className="text-xs text-blue-500 mb-3">Create a free account and your club selection syncs everywhere you use the app.</p>
+                <div className="flex gap-2">
+                  <SignUpButton mode="modal">
+                    <button className="bg-blue-600 text-white text-xs font-bold px-3 py-2 rounded-lg min-h-[36px]">
+                      Create account
+                    </button>
+                  </SignUpButton>
+                  <SignInButton mode="modal">
+                    <button className="text-blue-600 text-xs font-bold px-3 py-2 rounded-lg border border-blue-200 min-h-[36px]">
+                      Sign in
+                    </button>
+                  </SignInButton>
+                </div>
+              </div>
             </div>
+          )
         }
       </section>
 
@@ -176,7 +204,7 @@ export default function Settings() {
       {showClubPicker && (
         <ClubPickerModal
           clubs={clubs}
-          onSelect={(c) => setHomeClub(c.id)}
+          onSelect={(c) => saveHomeClub(c)}
           onClose={() => setShowClubPicker(false)}
         />
       )}

@@ -6,9 +6,11 @@ import NotificationBanner   from '../notifications/NotificationBanner'
 import { useAppStore }      from '../../store/appStore'
 import { COUNTY_COLOURS }   from '../../utils/countyColours'
 import { CodeFilterProvider } from '../../contexts/CodeFilterContext'
+import { useProfileSync }   from '../../hooks/useProfileSync'
 
 export default function Layout() {
   const { fontSize, darkMode, theme, favouriteCounty } = useAppStore()
+  useProfileSync()
 
   useEffect(() => {
     const html = document.documentElement
