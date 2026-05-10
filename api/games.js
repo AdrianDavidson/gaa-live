@@ -7,16 +7,24 @@ export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' })
 
   const date   = req.query.date   ?? new Date().toISOString().split('T')[0]
-  const dateTo = req.query.dateTo ?? date   // inclusive end date for range queries
+  const dateTo = req.query.dateTo ?? date
   const county = req.query.county ?? 'Cork'
   const grade  = req.query.grade  ?? 'minor'
   const code   = req.query.code   ?? 'hurling'
 
   const cacheKey = `games:cache:${county}:${date}:${dateTo}`
-  const cached   = await redis.get(cacheKey)
-  if (cached) return res.json(cached)
+  try {
+    const cached = await redis.get(cacheKey)
+    if (cached) return res.json(cached)
+  } catch (redisErr) {
+    console.error('[games] Redis get failed:', redisErr?.message)
+    // continue without cache
+  }
 
-  // Step 1: get competition IDs matching the filter (can't filter joined tables via .eq in Supabase JS)
+  try {
+
+  // Step 1: get competition IDs
+  console.log('[games] querying competitions', { county, grade, code })
   const { data: comps, error: compErr } = await supabase
     .from('competitions')
     .select('id')
@@ -24,11 +32,19 @@ export default async function handler(req, res) {
     .eq('grade',  grade)
     .eq('code',   code)
 
-  if (compErr) return res.status(500).json({ error: compErr.message })
+  if (compErr) {
+    console.error('[games] competitions error:', compErr.message)
+    return res.status(500).json({ error: compErr.message })
+  }
   const compIds = (comps ?? []).map((c) => c.id)
-  if (!compIds.length) { await redis.set(cacheKey, [], { ex: 120 }); return res.json([]) }
+  console.log('[games] compIds', compIds)
+  if (!compIds.length) {
+    try { await redis.set(cacheKey, [], { ex: 120 }) } catch (_) {}
+    return res.json([])
+  }
 
-  // Step 2: get games in the date range for those competitions
+  // Step 2: get games
+  console.log('[games] querying games for date range', date, dateTo)
   const { data: rows, error: gErr } = await supabase
     .from('games')
     .select(`
@@ -42,11 +58,15 @@ export default async function handler(req, res) {
     .lt('start_time',  `${nextDay(dateTo)}T00:00:00`)
     .order('start_time', { ascending: true })
 
-  if (gErr) return res.status(500).json({ error: gErr.message })
+  if (gErr) {
+    console.error('[games] games error:', gErr.message)
+    return res.status(500).json({ error: gErr.message })
+  }
+  console.log('[games] rows count', rows?.length ?? 0)
 
   const ids = (rows ?? []).map((g) => g.id)
 
-  // Step 3: get latest score update per game
+  // Step 3: latest score update per game
   const { data: scores } = ids.length
     ? await supabase
         .from('score_updates')
@@ -84,9 +104,12 @@ export default async function handler(req, res) {
     updated_at:         latestByGame[g.id]?.created_at ?? null,
   }))
 
-  const ttl = date === dateTo ? 120 : 300
-  await redis.set(cacheKey, games, { ex: ttl })
+  try { await redis.set(cacheKey, games, { ex: date === dateTo ? 120 : 300 }) } catch (_) {}
   return res.json(games)
+  } catch (err) {
+    console.error('[games] unhandled error:', err?.message, err?.stack)
+    return res.status(500).json({ error: err?.message ?? 'Internal server error' })
+  }
 }
 
 function nextDay(dateStr) {
