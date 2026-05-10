@@ -1,6 +1,7 @@
 import { Link }        from 'react-router-dom'
 import { MapPin }      from 'lucide-react'
 import { useClubTheme } from '../../hooks/useClubTheme'
+import { useAppStore }  from '../../store/appStore'
 
 function formatDateTime(ts) {
   if (!ts) return ''
@@ -11,16 +12,17 @@ function formatDateTime(ts) {
 }
 
 export default function ClubHeroCard({ nextGame }) {
-  const theme = useClubTheme()
+  const theme      = useClubTheme()
+  const homeClubId = useAppStore((s) => s.homeClubId)
 
-  if (!theme.name) {
+  if (!homeClubId) {
     return (
       <Link
         to="/settings"
-        className="block rounded-2xl bg-gray-50 border border-dashed border-gray-200 p-5 text-center"
+        className="block rounded-2xl bg-blue-50 border border-dashed border-blue-200 p-5 text-center"
       >
-        <p className="text-sm font-bold text-gray-600 mb-1">Pick your club</p>
-        <p className="text-xs text-gray-400">Get your next game right here →</p>
+        <p className="text-sm font-bold text-blue-700 mb-1">Pick your club</p>
+        <p className="text-xs text-blue-400">Get your next game right here →</p>
       </Link>
     )
   }
