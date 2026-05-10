@@ -1,12 +1,11 @@
-import { NavLink }                                   from 'react-router-dom'
-import { House, Radio, Calendar, Trophy, Settings }  from 'lucide-react'
+import { NavLink }                                    from 'react-router-dom'
+import { CalendarDays, List, Trophy, UserCircle }     from 'lucide-react'
 
 const NAV_ITEMS = [
-  { to: '/',         label: 'Home',     Icon: House    },
-  { to: '/live',     label: 'Live',     Icon: Radio    },
-  { to: '/fixtures', label: 'Fixtures', Icon: Calendar },
-  { to: '/results',  label: 'Results',  Icon: Trophy   },
-  { to: '/settings', label: 'Settings', Icon: Settings },
+  { to: '/',          label: 'Today',    Icon: CalendarDays },
+  { to: '/fixtures',  label: 'Fixtures', Icon: List         },
+  { to: '/table',     label: 'Table',    Icon: Trophy       },
+  { to: '/settings',  label: 'Settings', Icon: UserCircle   },
 ]
 
 export default function BottomNav() {
@@ -25,21 +24,19 @@ export default function BottomNav() {
               className={({ isActive }) =>
                 `relative flex flex-col items-center justify-center gap-1 py-2 min-h-[56px] w-full text-xs font-semibold transition-colors ${
                   isActive
-                    ? 'text-gaa-green'
-                    : 'text-gray-400 hover:text-gray-600 active:text-gaa-green'
+                    ? 'text-gaa-minor'
+                    : 'text-gray-400 hover:text-gray-600 active:text-gaa-minor'
                 }`
               }
             >
               {({ isActive }) => (
                 <>
-                  {/* Active indicator bar along the top edge */}
                   {isActive && (
                     <span
-                      className="absolute top-0 left-2 right-2 h-0.5 bg-gaa-green rounded-b-full"
+                      className="absolute top-0 left-2 right-2 h-0.5 bg-gaa-minor rounded-b-full"
                       aria-hidden="true"
                     />
                   )}
-
                   <Icon
                     size={22}
                     strokeWidth={isActive ? 2.5 : 1.75}

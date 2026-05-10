@@ -1,259 +1,192 @@
-import { Check }             from 'lucide-react'
-import PageWrapper            from '../components/layout/PageWrapper'
-import NotificationToggle     from '../components/notifications/NotificationToggle'
-import { useAppStore }        from '../store/appStore'
-import { ALL_COUNTIES, COUNTY_COLOURS } from '../utils/countyColours'
+import { useState }              from 'react'
+import { Link }                  from 'react-router-dom'
+import { useAuth, useUser, UserButton, SignInButton } from '@clerk/react'
+import { X, Plus, ChevronRight } from 'lucide-react'
+import PageWrapper                from '../components/layout/PageWrapper'
+import NotificationToggle         from '../components/notifications/NotificationToggle'
+import { useAppStore }            from '../store/appStore'
+import { useClubs }               from '../hooks/useClubs'
+import { useClubTheme }           from '../hooks/useClubTheme'
+import { useClubNotifications }   from '../hooks/useClubNotifications'
 
-const FONT_SIZES = [
-  { value: 'medium', label: 'Medium' },
-  { value: 'large',  label: 'Large'  },
-  { value: 'xl',     label: 'Extra Large' },
-]
+// ─── Club picker modal ────────────────────────────────────────────────────────
 
-function ThemeSwatch({ primary, secondary, size = 28 }) {
-  return (
-    <span
-      className="rounded-full inline-block shrink-0"
-      style={{
-        width: size,
-        height: size,
-        background: `linear-gradient(135deg, ${primary} 50%, ${secondary} 50%)`,
-        border: '2px solid rgba(0,0,0,0.12)',
-      }}
-      aria-hidden="true"
-    />
+function ClubPickerModal({ clubs, onSelect, onClose }) {
+  const [search, setSearch] = useState('')
+  const filtered = clubs.filter((c) =>
+    c.name.toLowerCase().includes(search.toLowerCase())
   )
-}
-
-function ThemeCard({ id, name, description, primary, secondary, active, onClick, disabled }) {
   return (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      aria-pressed={active}
-      className={`relative flex flex-col items-center gap-2 p-3 rounded-xl border-2 text-center transition-all min-h-[100px] ${
-        active
-          ? 'border-gaa-green bg-white shadow-sm'
-          : disabled
-          ? 'border-gray-200 bg-gray-50 opacity-50 cursor-not-allowed'
-          : 'border-gray-200 bg-white hover:border-gray-300'
-      }`}
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/50"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Pick your club"
     >
-      {active && (
-        <span className="absolute top-2 right-2 w-5 h-5 bg-gaa-green rounded-full flex items-center justify-center">
-          <Check size={12} strokeWidth={3} className="text-white" />
-        </span>
-      )}
-      <ThemeSwatch primary={primary} secondary={secondary} size={32} />
-      <div>
-        <p className="text-xs font-bold text-gray-800 leading-tight">{name}</p>
-        <p className="text-xs text-gray-500 leading-tight mt-0.5">{description}</p>
+      <div className="bg-white w-full max-w-lg rounded-t-2xl p-4 pb-8">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-black text-gray-900">Pick your club</h2>
+          <button onClick={onClose} className="text-gray-400 min-h-[44px] px-2">
+            <X size={20} />
+          </button>
+        </div>
+        <input
+          type="search"
+          placeholder="Search clubs…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-base mb-3 focus:outline-none focus:ring-2 focus:ring-gaa-minor"
+          autoFocus
+        />
+        <ul className="max-h-64 overflow-y-auto divide-y divide-gray-100">
+          {filtered.map((c) => (
+            <li key={c.id}>
+              <button
+                onClick={() => { onSelect(c); onClose() }}
+                className="w-full text-left flex items-center gap-3 py-3 px-1 min-h-[48px]"
+              >
+                {c.crest_url && (
+                  <img src={c.crest_url} alt="" className="w-6 h-6 object-contain rounded-sm" aria-hidden="true" />
+                )}
+                <div
+                  className="w-4 h-4 rounded-full shrink-0"
+                  style={{ background: `linear-gradient(135deg, ${c.primary_colour} 50%, ${c.secondary_colour ?? '#fff'} 50%)` }}
+                  aria-hidden="true"
+                />
+                <span className="font-semibold text-sm text-gray-900">{c.name}</span>
+              </button>
+            </li>
+          ))}
+          {filtered.length === 0 && (
+            <li className="py-6 text-center text-gray-400 text-sm">No clubs found</li>
+          )}
+        </ul>
       </div>
-    </button>
+    </div>
   )
 }
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function Settings() {
-  const {
-    favouriteCounty, setFavouriteCounty,
-    fontSize,        setFontSize,
-    darkMode,        toggleDarkMode,
-    theme,           setTheme,
-    notificationsEnabled,
-  } = useAppStore()
+  const [showClubPicker, setShowClubPicker]       = useState(false)
+  const [showFollowPicker, setShowFollowPicker]   = useState(false)
 
-  const countyColours = favouriteCounty ? COUNTY_COLOURS[favouriteCounty] : null
-
-  const THEMES = [
-    {
-      id:          'default',
-      name:        'Default',
-      description: 'Classic GAA',
-      primary:     '#006633',
-      secondary:   '#FFD700',
-      disabled:    false,
-    },
-    {
-      id:          'county',
-      name:        'County',
-      description: favouriteCounty ?? 'Set county first',
-      primary:     countyColours?.primary   ?? '#aaaaaa',
-      secondary:   countyColours?.secondary ?? '#cccccc',
-      disabled:    !favouriteCounty,
-    },
-    {
-      id:          'professional',
-      name:        'Pro',
-      description: 'Refined gold',
-      primary:     '#005C2E',
-      secondary:   '#C9A84C',
-      disabled:    false,
-    },
-  ]
-
-  function handleSetTheme(id) {
-    if (id === 'county' && !favouriteCounty) return
-    setTheme(id)
-  }
+  const { isSignedIn }     = useAuth()
+  const { setHomeClub }    = useAppStore()
+  const { data: clubs = [] } = useClubs()
+  const theme              = useClubTheme()
+  const { followedClubs, followClub, unfollowClub } = useClubNotifications()
 
   return (
     <PageWrapper title="Settings">
 
-      {/* Favourite county */}
-      <section className="mb-6" aria-labelledby="county-heading">
-        <h2 id="county-heading" className="text-base font-bold text-gray-700 mb-2">
-          Favourite County
-        </h2>
-        <select
-          value={favouriteCounty ?? ''}
-          onChange={(e) => setFavouriteCounty(e.target.value || null)}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-base min-h-[48px] focus:outline-none focus:ring-2 focus:ring-gaa-green"
-          aria-label="Select your favourite county"
+      {/* ── Club identity ───────────────────────────────────────────────── */}
+      <section className="mb-6" aria-labelledby="club-heading">
+        <h2 id="club-heading" className="text-base font-bold text-gray-700 mb-3">Your Club</h2>
+
+        <div
+          className="flex items-center gap-3 p-3 rounded-xl border"
+          style={theme.name
+            ? { background: `${theme.primary}11`, borderColor: `${theme.primary}33` }
+            : { background: '#f9fafb', borderColor: '#e5e7eb' }
+          }
         >
-          <option value="">— None selected —</option>
-          {ALL_COUNTIES.map((c) => (
-            <option key={c} value={c}>{c}</option>
-          ))}
-        </select>
-      </section>
-
-      {/* Appearance — theme + dark mode */}
-      <section className="mb-6" aria-labelledby="appearance-heading">
-        <h2 id="appearance-heading" className="text-base font-bold text-gray-700 mb-3">
-          Appearance
-        </h2>
-
-        {/* Theme picker */}
-        <p className="text-xs text-gray-500 mb-2">Colour theme</p>
-        <div className="grid grid-cols-3 gap-2 mb-4">
-          {THEMES.map((t) => (
-            <ThemeCard
-              key={t.id}
-              id={t.id}
-              name={t.name}
-              description={t.description}
-              primary={t.primary}
-              secondary={t.secondary}
-              active={theme === t.id}
-              disabled={t.disabled}
-              onClick={() => handleSetTheme(t.id)}
-            />
-          ))}
+          {theme.crest && (
+            <img src={theme.crest} alt="" className="w-10 h-10 object-contain rounded-full" aria-hidden="true" />
+          )}
+          {!theme.crest && (
+            <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center shrink-0">
+              <span className="text-gray-400 text-xs">?</span>
+            </div>
+          )}
+          <div className="flex-1">
+            <p className="font-bold text-sm text-gray-900">{theme.name ?? 'No club selected'}</p>
+            <p className="text-xs text-gray-500">Cork Minor Hurling Fan</p>
+          </div>
+          <button
+            onClick={() => setShowClubPicker(true)}
+            className="text-xs font-bold text-gaa-minor border border-gaa-minor rounded-lg px-3 py-2 min-h-[40px]"
+          >
+            {theme.name ? 'Change' : 'Choose club'}
+          </button>
         </div>
 
-        {theme === 'county' && !favouriteCounty && (
-          <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-4">
-            Select a favourite county above to use county colours.
-          </p>
+        {isSignedIn
+          ? <div className="mt-3 flex items-center gap-2"><UserButton /><span className="text-sm text-gray-500">Account</span></div>
+          : <div className="mt-3">
+              <SignInButton mode="modal">
+                <button className="text-xs font-bold text-gaa-minor">Sign in to sync your preferences →</button>
+              </SignInButton>
+            </div>
+        }
+      </section>
+
+      {/* ── Club notifications ───────────────────────────────────────────── */}
+      <section className="mb-6" aria-labelledby="club-notif-heading">
+        <h2 id="club-notif-heading" className="text-base font-bold text-gray-700 mb-1">Club Notifications</h2>
+        <p className="text-xs text-gray-400 mb-3">Get notified on every score update</p>
+
+        {followedClubs.length > 0 && (
+          <ul className="space-y-2 mb-3">
+            {followedClubs.map((club) => (
+              <li key={club} className="flex items-center justify-between bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
+                <span className="text-sm font-semibold text-gray-900">{club}</span>
+                <button
+                  onClick={() => unfollowClub(club)}
+                  className="text-gray-400 hover:text-red-500 min-h-[36px] px-1"
+                  aria-label={`Unfollow ${club}`}
+                >
+                  <X size={16} />
+                </button>
+              </li>
+            ))}
+          </ul>
         )}
 
-        {/* Dark mode toggle */}
-        <p className="text-xs text-gray-500 mb-2">Mode</p>
         <button
-          onClick={toggleDarkMode}
-          aria-pressed={darkMode}
-          className="flex items-center gap-3 min-h-[48px] text-base font-medium text-gray-800 w-full"
+          onClick={() => setShowFollowPicker(true)}
+          className="flex items-center gap-1.5 text-xs font-bold text-gaa-minor min-h-[44px]"
         >
-          <span
-            className={`w-12 h-7 rounded-full transition-colors flex items-center px-1 ${
-              darkMode ? 'bg-gaa-green' : 'bg-gray-300'
-            }`}
-            aria-hidden="true"
-          >
-            <span
-              className={`w-5 h-5 bg-white rounded-full shadow transition-transform ${
-                darkMode ? 'translate-x-5' : 'translate-x-0'
-              }`}
-            />
-          </span>
-          Dark mode
+          <Plus size={14} />
+          Follow another club
         </button>
       </section>
 
-      {/* Text size */}
-      <section className="mb-6" aria-labelledby="fontsize-heading">
-        <h2 id="fontsize-heading" className="text-base font-bold text-gray-700 mb-2">
-          Text Size
-        </h2>
-        <div className="flex gap-2" role="group" aria-labelledby="fontsize-heading">
-          {FONT_SIZES.map(({ value, label }) => (
-            <button
-              key={value}
-              onClick={() => setFontSize(value)}
-              aria-pressed={fontSize === value}
-              className={`flex-1 py-2 rounded-lg text-sm font-bold min-h-[48px] border transition-colors ${
-                fontSize === value
-                  ? 'bg-gaa-green text-white border-gaa-green'
-                  : 'bg-white text-gray-600 border-gray-300 hover:border-gray-400'
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-      </section>
-
-      {/* Notifications */}
+      {/* ── Push notifications (existing) ───────────────────────────────── */}
       <section className="mb-6" aria-labelledby="notif-heading">
         <h2 id="notif-heading" className="text-base font-bold text-gray-700 mb-2">
-          Notifications
+          Senior Match Alerts
         </h2>
         <NotificationToggle />
       </section>
 
-      {/* Foireann API */}
-      <section className="mb-6" aria-labelledby="foireann-heading">
-        <h2 id="foireann-heading" className="text-base font-bold text-gray-700 mb-3">
-          Unlock Full Hurling Data
-        </h2>
-        <div className="bg-green-50 border border-gaa-green rounded-xl p-4 space-y-3 text-sm text-gray-700">
-          <p>
-            <strong>Currently showing:</strong> All-Ireland SHC, Munster SHC, Leinster SHC,
-            Joe McDonagh Cup, Christy Ring Cup — sourced free from TheSportsDB.
-          </p>
-          <p>
-            <strong>To unlock:</strong> Under-20, Camogie, Allianz Hurling League, club
-            championships and all county competitions — apply for the <strong>Foireann Open Data API</strong>.
-          </p>
-          <div className="bg-white border border-green-200 rounded-lg p-3 text-xs text-gray-600">
-            <p className="font-bold text-gray-800 mb-1">How to apply (free)</p>
-            <ol className="space-y-1 list-decimal list-inside">
-              <li>You need to be a <strong>Club Administrator</strong> on Foireann</li>
-              <li>Go to <strong>gmssupport.zendesk.com</strong> and search "Open Data API Getting Started"</li>
-              <li>Submit a request — you'll receive 2 API keys by email</li>
-              <li>Add <code className="bg-gray-100 px-1 rounded">FOIREANN_API_KEY</code> to your Vercel environment variables</li>
-            </ol>
-          </div>
-          <p className="text-xs text-gray-500">
-            If you're not a club admin, ask your club secretary or county board — they can apply on your behalf.
-          </p>
-        </div>
+      {/* ── Senior results link ──────────────────────────────────────────── */}
+      <section className="mb-6">
+        <Link
+          to="/senior"
+          className="flex items-center justify-between text-sm text-gray-500 hover:text-gray-700 min-h-[44px]"
+        >
+          Senior county results
+          <ChevronRight size={16} className="text-gray-400" />
+        </Link>
       </section>
 
-      {/* About our data */}
-      <section aria-labelledby="about-heading">
-        <h2 id="about-heading" className="text-base font-bold text-gray-700 mb-3">
-          About Our Data
-        </h2>
-        <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-3 text-sm text-gray-600">
-          <p>
-            <strong className="text-gray-800">Fixtures &amp; Results</strong> — Sourced from
-            TheSportsDB (free, no key needed) for 5 senior hurling competitions.
-          </p>
-          <p>
-            <strong className="text-gray-800">Scores in G-P format</strong> — e.g. 1-18 means
-            1 goal (3 pts) + 18 points = 21 total. The winning score is shown in green.
-          </p>
-          <p>
-            <strong className="text-gray-800">Live news</strong> — RTÉ Sport, BBC Sport, and
-            Hoganstand RSS feeds are checked every 2 minutes during match windows.
-          </p>
-          <p className="text-xs text-gray-400 pt-2 border-t border-gray-200">
-            GAA Live does not host video. All streams link to public YouTube content.
-            Fixture data: TheSportsDB (CC). Results may lag by up to 10 minutes post-game.
-          </p>
-        </div>
-      </section>
+      {/* Modals */}
+      {showClubPicker && (
+        <ClubPickerModal
+          clubs={clubs}
+          onSelect={(c) => setHomeClub(c.id)}
+          onClose={() => setShowClubPicker(false)}
+        />
+      )}
+      {showFollowPicker && (
+        <ClubPickerModal
+          clubs={clubs.filter((c) => !followedClubs.includes(c.name))}
+          onSelect={(c) => followClub(c.name)}
+          onClose={() => setShowFollowPicker(false)}
+        />
+      )}
 
     </PageWrapper>
   )

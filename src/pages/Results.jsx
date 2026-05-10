@@ -1,3 +1,4 @@
+
 import { useState }          from 'react'
 import { Trophy, MapPin, PlayCircle, ChevronDown, ChevronUp } from 'lucide-react'
 import PageWrapper             from '../components/layout/PageWrapper'

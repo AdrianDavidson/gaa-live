@@ -13,6 +13,8 @@ export default {
           stream: '#7c3aed',
           polled: '#d97706',
           nodata: '#6b7280',
+          minor:        '#7C3AED',
+          'minor-soft': '#F3EFFE',
           football: {
             DEFAULT: '#1A6B35',  // forest green — Kerry, the pitch, the GAA
             soft:    '#E3F2E9',
