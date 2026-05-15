@@ -1,10 +1,10 @@
-import PageWrapper     from '../components/layout/PageWrapper'
-import Spinner         from '../components/ui/Spinner'
-import ClubHeroCard    from '../components/minor/ClubHeroCard'
-import MinorGameCard   from '../components/minor/MinorGameCard'
-import FixtureCard     from '../components/minor/FixtureCard'
-import { useGames }    from '../hooks/useGames'
-import { useAppStore } from '../store/appStore'
+import PageWrapper           from '../components/layout/PageWrapper'
+import ClubHeroCard          from '../components/minor/ClubHeroCard'
+import MinorGameCard         from '../components/minor/MinorGameCard'
+import FixtureCard           from '../components/minor/FixtureCard'
+import { SkeletonTodayPage } from '../components/ui/Skeletons'
+import { useGames }          from '../hooks/useGames'
+import { useAppStore }       from '../store/appStore'
 
 function SectionHeader({ title, pulse }) {
   return (
@@ -35,7 +35,7 @@ export default function Today() {
 
   return (
     <PageWrapper title="Today">
-      {isLoading && <Spinner label="Loading today's games…" />}
+      {isLoading && <SkeletonTodayPage />}
 
       {!isLoading && (
         <div className="space-y-5">

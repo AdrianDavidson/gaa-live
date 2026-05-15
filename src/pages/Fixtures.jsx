@@ -1,11 +1,11 @@
-import { useState }             from 'react'
-import PageWrapper               from '../components/layout/PageWrapper'
-import Spinner                   from '../components/ui/Spinner'
-import FixtureCard               from '../components/minor/FixtureCard'
-import { useUpcomingGames }      from '../hooks/useGames'
-import { useCompetitions }       from '../hooks/useCompetitions'
-import { useAppStore }           from '../store/appStore'
-import { formatDateGroup }       from '../utils/formatters'
+import { useState }                from 'react'
+import PageWrapper                 from '../components/layout/PageWrapper'
+import FixtureCard                 from '../components/minor/FixtureCard'
+import { SkeletonFixturesPage }    from '../components/ui/Skeletons'
+import { useUpcomingGames }        from '../hooks/useGames'
+import { useCompetitions }         from '../hooks/useCompetitions'
+import { useAppStore }             from '../store/appStore'
+import { formatDateGroup }         from '../utils/formatters'
 
 function addDays(n) {
   const d = new Date(Date.now() + n * 86_400_000)
@@ -50,73 +50,78 @@ export default function Fixtures() {
 
   return (
     <PageWrapper title="Fixtures">
-      {/* Filter pills */}
-      <div
-        className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 mb-4"
-        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-        role="group"
-        aria-label="Filter fixtures"
-      >
-        {homeClubId && (
-          <button
-            onClick={() => setMyClubsOnly((v) => !v)}
-            className={`shrink-0 text-xs font-bold px-3 py-1.5 rounded-full border transition-colors min-h-[36px] ${
-              myClubsOnly
-                ? 'bg-gaa-minor text-white border-gaa-minor'
-                : 'bg-white text-gray-600 border-gray-300'
-            }`}
+
+      {isLoading && <SkeletonFixturesPage />}
+
+      {!isLoading && (
+        <>
+          {/* Filter pills */}
+          <div
+            className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 mb-4"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            role="group"
+            aria-label="Filter fixtures"
           >
-            My Club
-          </button>
-        )}
-        <button
-          onClick={() => setCompetitionFilter('all')}
-          className={`shrink-0 text-xs font-bold px-3 py-1.5 rounded-full border transition-colors min-h-[36px] ${
-            competitionFilter === 'all'
-              ? 'bg-gaa-minor text-white border-gaa-minor'
-              : 'bg-white text-gray-600 border-gray-300'
-          }`}
-        >
-          All
-        </button>
-        {competitions.map((c) => (
-          <button
-            key={c.id}
-            onClick={() => setCompetitionFilter(c.id)}
-            className={`shrink-0 text-xs font-bold px-3 py-1.5 rounded-full border transition-colors min-h-[36px] ${
-              competitionFilter === c.id
-                ? 'bg-gaa-minor text-white border-gaa-minor'
-                : 'bg-white text-gray-600 border-gray-300'
-            }`}
-          >
-            {c.short_name}
-          </button>
-        ))}
-      </div>
+            {homeClubId && (
+              <button
+                onClick={() => setMyClubsOnly((v) => !v)}
+                className={`shrink-0 text-xs font-bold px-3 py-1.5 rounded-full border transition-colors min-h-[36px] ${
+                  myClubsOnly
+                    ? 'bg-gaa-minor text-white border-gaa-minor'
+                    : 'bg-white text-gray-600 border-gray-300'
+                }`}
+              >
+                My Club
+              </button>
+            )}
+            <button
+              onClick={() => setCompetitionFilter('all')}
+              className={`shrink-0 text-xs font-bold px-3 py-1.5 rounded-full border transition-colors min-h-[36px] ${
+                competitionFilter === 'all'
+                  ? 'bg-gaa-minor text-white border-gaa-minor'
+                  : 'bg-white text-gray-600 border-gray-300'
+              }`}
+            >
+              All
+            </button>
+            {competitions.map((c) => (
+              <button
+                key={c.id}
+                onClick={() => setCompetitionFilter(c.id)}
+                className={`shrink-0 text-xs font-bold px-3 py-1.5 rounded-full border transition-colors min-h-[36px] ${
+                  competitionFilter === c.id
+                    ? 'bg-gaa-minor text-white border-gaa-minor'
+                    : 'bg-white text-gray-600 border-gray-300'
+                }`}
+              >
+                {c.short_name}
+              </button>
+            ))}
+          </div>
 
-      {isLoading && <Spinner label="Loading fixtures…" />}
+          {isError && (
+            <div role="alert" className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4 text-sm text-amber-800">
+              Couldn't load fixtures. Check your connection and try again.
+            </div>
+          )}
 
-      {isError && (
-        <div role="alert" className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4 text-sm text-amber-800">
-          Couldn't load fixtures. Check your connection and try again.
-        </div>
+          {!isError && filtered.length === 0 && (
+            <p className="text-center text-gray-400 text-sm py-10">
+              No upcoming fixtures in the next 2 weeks.
+            </p>
+          )}
+
+          {dateKeys.map((date) => (
+            <section key={date} className="mb-5">
+              <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-2">
+                <span className="w-1 h-3 rounded-full bg-gray-300 shrink-0" aria-hidden="true" />
+                {formatDateGroup(date)}
+              </h2>
+              {grouped[date].map((g) => <FixtureCard key={g.id} game={g} />)}
+            </section>
+          ))}
+        </>
       )}
-
-      {!isLoading && !isError && filtered.length === 0 && (
-        <p className="text-center text-gray-400 text-sm py-10">
-          No upcoming fixtures in the next 2 weeks.
-        </p>
-      )}
-
-      {dateKeys.map((date) => (
-        <section key={date} className="mb-5">
-          <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-2">
-            <span className="w-1 h-3 rounded-full bg-gray-300 shrink-0" aria-hidden="true" />
-            {formatDateGroup(date)}
-          </h2>
-          {grouped[date].map((g) => <FixtureCard key={g.id} game={g} />)}
-        </section>
-      ))}
     </PageWrapper>
   )
 }

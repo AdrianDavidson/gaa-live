@@ -1,9 +1,10 @@
-import { useState }         from 'react'
-import PageWrapper           from '../components/layout/PageWrapper'
-import Spinner               from '../components/ui/Spinner'
-import StandingsTable        from '../components/minor/StandingsTable'
-import { useStandings }      from '../hooks/useStandings'
-import { useCompetitions }   from '../hooks/useCompetitions'
+import { useState }              from 'react'
+import PageWrapper               from '../components/layout/PageWrapper'
+import Spinner                   from '../components/ui/Spinner'
+import StandingsTable            from '../components/minor/StandingsTable'
+import { SkeletonTablePage }     from '../components/ui/Skeletons'
+import { useStandings }          from '../hooks/useStandings'
+import { useCompetitions }       from '../hooks/useCompetitions'
 
 function CompetitionStandings({ competition }) {
   const { data: rows = [], isLoading } = useStandings(competition.id)
@@ -44,7 +45,7 @@ export default function Table() {
 
   return (
     <PageWrapper title="Table">
-      {compsLoading && <Spinner label="Loading competitions…" />}
+      {compsLoading && <SkeletonTablePage />}
 
       {!compsLoading && leagueComps.length === 0 && (
         <p className="text-center text-gray-400 text-sm py-10">

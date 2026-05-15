@@ -1,10 +1,10 @@
-import { useState, useMemo }     from 'react'
-import PageWrapper                from '../components/layout/PageWrapper'
-import Spinner                    from '../components/ui/Spinner'
-import ResultCard                 from '../components/minor/ResultCard'
-import { useResults }             from '../hooks/useResults'
-import { useAppStore }            from '../store/appStore'
-import { formatDateGroup }        from '../utils/formatters'
+import { useState, useMemo }        from 'react'
+import PageWrapper                   from '../components/layout/PageWrapper'
+import ResultCard                    from '../components/minor/ResultCard'
+import { SkeletonResultsPage }       from '../components/ui/Skeletons'
+import { useResults }                from '../hooks/useResults'
+import { useAppStore }               from '../store/appStore'
+import { formatDateGroup }           from '../utils/formatters'
 
 function groupByDate(games) {
   const grouped = {}
@@ -52,54 +52,56 @@ export default function Results() {
   return (
     <PageWrapper title="Results">
 
-      <div
-        className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 mb-4"
-        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-        role="group"
-        aria-label="Filter results"
-      >
-        {homeClubId && (
-          <button
-            onClick={() => setMyClubsOnly((v) => !v)}
-            className={`shrink-0 text-xs font-bold px-3 py-1.5 rounded-full border transition-colors min-h-[36px] ${
-              myClubsOnly
-                ? 'bg-gaa-minor text-white border-gaa-minor'
-                : 'bg-white text-gray-600 border-gray-300'
-            }`}
+      {isLoading && <SkeletonResultsPage />}
+
+      {!isLoading && (
+        <>
+          <div
+            className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 mb-4"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            role="group"
+            aria-label="Filter results"
           >
-            My Club
-          </button>
-        )}
+            {homeClubId && (
+              <button
+                onClick={() => setMyClubsOnly((v) => !v)}
+                className={`shrink-0 text-xs font-bold px-3 py-1.5 rounded-full border transition-colors min-h-[36px] ${
+                  myClubsOnly
+                    ? 'bg-gaa-minor text-white border-gaa-minor'
+                    : 'bg-white text-gray-600 border-gray-300'
+                }`}
+              >
+                My Club
+              </button>
+            )}
 
-        <button
-          onClick={() => setCompetitionFilter('all')}
-          className={`shrink-0 text-xs font-bold px-3 py-1.5 rounded-full border transition-colors min-h-[36px] ${
-            competitionFilter === 'all'
-              ? 'bg-gaa-minor text-white border-gaa-minor'
-              : 'bg-white text-gray-600 border-gray-300'
-          }`}
-        >
-          All
-        </button>
+            <button
+              onClick={() => setCompetitionFilter('all')}
+              className={`shrink-0 text-xs font-bold px-3 py-1.5 rounded-full border transition-colors min-h-[36px] ${
+                competitionFilter === 'all'
+                  ? 'bg-gaa-minor text-white border-gaa-minor'
+                  : 'bg-white text-gray-600 border-gray-300'
+              }`}
+            >
+              All
+            </button>
 
-        {competitionsInData.map((c) => (
-          <button
-            key={c.id}
-            onClick={() => setCompetitionFilter(c.id)}
-            className={`shrink-0 text-xs font-bold px-3 py-1.5 rounded-full border transition-colors min-h-[36px] ${
-              competitionFilter === c.id
-                ? 'bg-gaa-minor text-white border-gaa-minor'
-                : 'bg-white text-gray-600 border-gray-300'
-            }`}
-          >
-            {c.short_name}
-          </button>
-        ))}
-      </div>
+            {competitionsInData.map((c) => (
+              <button
+                key={c.id}
+                onClick={() => setCompetitionFilter(c.id)}
+                className={`shrink-0 text-xs font-bold px-3 py-1.5 rounded-full border transition-colors min-h-[36px] ${
+                  competitionFilter === c.id
+                    ? 'bg-gaa-minor text-white border-gaa-minor'
+                    : 'bg-white text-gray-600 border-gray-300'
+                }`}
+              >
+                {c.short_name}
+              </button>
+            ))}
+          </div>
 
-      {isLoading && <Spinner label="Loading results…" />}
-
-      {isError && (
+          {isError && (
         <div role="alert" className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4 text-sm text-amber-800">
           Couldn't load results. Check your connection and try again.
         </div>
@@ -111,15 +113,17 @@ export default function Results() {
         </p>
       )}
 
-      {dateKeys.map((date) => (
-        <section key={date} className="mb-5">
-          <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-2">
-            <span className="w-1 h-3 rounded-full bg-gray-300 shrink-0" aria-hidden="true" />
-            {formatDateGroup(date)}
-          </h2>
-          {grouped[date].map((g) => <ResultCard key={g.id} game={g} />)}
-        </section>
-      ))}
+          {dateKeys.map((date) => (
+            <section key={date} className="mb-5">
+              <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-2">
+                <span className="w-1 h-3 rounded-full bg-gray-300 shrink-0" aria-hidden="true" />
+                {formatDateGroup(date)}
+              </h2>
+              {grouped[date].map((g) => <ResultCard key={g.id} game={g} />)}
+            </section>
+          ))}
+        </>
+      )}
     </PageWrapper>
   )
 }
