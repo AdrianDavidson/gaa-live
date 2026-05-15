@@ -1,3 +1,7 @@
+# Docs and database scripts — keep off version control
+*.md
+*.sql
+
 # Environment variables — never commit real keys
 .env
 .env.local
@@ -27,3 +31,5 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+.vercel
