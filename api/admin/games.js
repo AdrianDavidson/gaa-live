@@ -10,7 +10,14 @@ export default async function handler(req, res) {
     const { homeClubId, awayClubId, competitionId, venue, startTime, assignedProId } = req.body
     const { data, error } = await supabase
       .from('games')
-      .insert({ home_club_id: homeClubId, away_club_id: awayClubId, competition_id: competitionId, venue, start_time: startTime, assigned_pro_id: assignedProId ?? null })
+      .insert({
+        home_club_id:    homeClubId    || null,
+        away_club_id:    awayClubId    || null,
+        competition_id:  competitionId || null,
+        venue,
+        start_time:      startTime,
+        assigned_pro_id: assignedProId || null,
+      })
       .select()
       .single()
     if (error) return res.status(500).json({ error: error.message })
@@ -23,7 +30,14 @@ export default async function handler(req, res) {
     const { homeClubId, awayClubId, competitionId, venue, startTime, assignedProId } = req.body
     const { data, error } = await supabase
       .from('games')
-      .update({ home_club_id: homeClubId, away_club_id: awayClubId, competition_id: competitionId, venue, start_time: startTime, assigned_pro_id: assignedProId ?? null })
+      .update({
+        home_club_id:    homeClubId    || null,
+        away_club_id:    awayClubId    || null,
+        competition_id:  competitionId || null,
+        venue,
+        start_time:      startTime,
+        assigned_pro_id: assignedProId || null,
+      })
       .eq('id', id)
       .select()
       .single()

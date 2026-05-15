@@ -21,7 +21,7 @@ export default async function handler(req, res) {
     }
     const { data, error } = await supabase
       .from('pros')
-      .insert({ clerk_id: clerkId, name, email, club_id: clubId ?? null })
+      .insert({ clerk_id: clerkId, name, email, club_id: clubId || null })
       .select()
       .single()
     if (error) return res.status(500).json({ error: error.message })
