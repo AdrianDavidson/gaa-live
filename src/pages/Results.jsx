@@ -4,7 +4,7 @@ import ResultCard                    from '../components/minor/ResultCard'
 import { SkeletonResultsPage }       from '../components/ui/Skeletons'
 import { useResults }                from '../hooks/useResults'
 import { useAppStore }               from '../store/appStore'
-import { formatDateGroup }           from '../utils/formatters'
+import { formatDateGroup, compPillLabel } from '../utils/formatters'
 
 function groupByDate(games) {
   const grouped = {}
@@ -31,6 +31,7 @@ export default function Results() {
         seen.set(g.competition_id, {
           id:         g.competition_id,
           short_name: g.competition_short,
+          name:       g.competition_name,
           season:     g.competition_season ?? 0,
         })
       }
@@ -96,7 +97,7 @@ export default function Results() {
                     : 'bg-gaa-surface text-gaa-text-muted border-gaa-border'
                 }`}
               >
-                {c.short_name}
+                {compPillLabel(c.name, c.short_name)}
               </button>
             ))}
           </div>

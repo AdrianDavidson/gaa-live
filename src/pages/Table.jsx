@@ -5,6 +5,7 @@ import StandingsTable            from '../components/minor/StandingsTable'
 import { SkeletonTablePage }     from '../components/ui/Skeletons'
 import { useStandings }          from '../hooks/useStandings'
 import { useCompetitions }       from '../hooks/useCompetitions'
+import { compPillLabel }         from '../utils/formatters'
 
 function CompetitionStandings({ competition }) {
   const { data: rows = [], isLoading } = useStandings(competition.id)
@@ -68,7 +69,7 @@ export default function Table() {
                   : 'bg-gaa-surface text-gaa-text-muted border-gaa-border'
               }`}
             >
-              {c.short_name}
+              {compPillLabel(c.name, c.short_name)}
             </button>
           ))}
         </div>

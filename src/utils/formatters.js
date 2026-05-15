@@ -25,6 +25,32 @@ export function weekMondayKey(dateStr) {
   return mon.toISOString().slice(0, 10)   // YYYY-MM-DD
 }
 
+// Convert a competition name/code to a short readable pill label.
+// Strips context words implied by the app (Cork, Minor, Hurling/Football)
+// and maps Championship → Cup so labels stay concise.
+// Falls back to parsing the short_name code if name is unavailable.
+export function compPillLabel(name, shortName) {
+  if (name) {
+    const label = name
+      .replace(/\bCork\s+/gi, '')
+      .replace(/\bMinor\s+/gi, '')
+      .replace(/\bHurling\s+/gi, '')
+      .replace(/\bFootball\s+/gi, '')
+      .replace(/\bChampionship\b/gi, 'Cup')
+      .replace(/\s+/g, ' ')
+      .trim()
+    if (label) return label
+  }
+  // Fallback: decode short_name code e.g. PMHL → "Premier League"
+  const code  = shortName ?? ''
+  const grade = code.startsWith('PM') ? 'Premier' :
+                code.startsWith('MA') ? 'A' :
+                code.startsWith('MB') ? 'B' : code.slice(0, 2)
+  const last  = code.slice(-1)
+  const type  = last === 'L' ? 'League' : last === 'C' ? 'Cup' : ''
+  return type ? `${grade} ${type}` : code
+}
+
 // "14–20 Jun" or "28 Jun – 4 Jul" when the week crosses a month boundary.
 export function formatWeekRange(mondayIso) {
   const mon = new Date(mondayIso + 'T00:00:00Z')

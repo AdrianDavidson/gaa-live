@@ -5,7 +5,7 @@ import { SkeletonFixturesPage }    from '../components/ui/Skeletons'
 import { useUpcomingGames }        from '../hooks/useGames'
 import { useCompetitions }         from '../hooks/useCompetitions'
 import { useAppStore }             from '../store/appStore'
-import { formatDateGroup }         from '../utils/formatters'
+import { formatDateGroup, compPillLabel } from '../utils/formatters'
 
 function addDays(n) {
   const d = new Date(Date.now() + n * 86_400_000)
@@ -94,7 +94,7 @@ export default function Fixtures() {
                     : 'bg-gaa-surface text-gaa-text-muted border-gaa-border'
                 }`}
               >
-                {c.short_name}
+                {compPillLabel(c.name, c.short_name)}
               </button>
             ))}
           </div>
