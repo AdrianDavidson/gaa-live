@@ -5,6 +5,7 @@ import { RequirePro, RequireAdmin }     from './components/auth/ProtectedRoute'
 
 import Today    from './pages/Today'
 import Fixtures from './pages/Fixtures'
+import Results  from './pages/Results'
 import Table    from './pages/Table'
 import Settings from './pages/Settings'
 import Senior   from './pages/Senior'
@@ -19,6 +20,7 @@ export default function App() {
         <Route path="/" element={<Layout />}>
           <Route index            element={<Today />} />
           <Route path="fixtures"  element={<Fixtures />} />
+          <Route path="results"   element={<Results />} />
           <Route path="table"     element={<Table />} />
           <Route path="settings"  element={<Settings />} />
           <Route path="senior"    element={<Senior />} />

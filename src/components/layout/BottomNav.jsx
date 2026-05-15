@@ -1,9 +1,10 @@
-import { NavLink }                                    from 'react-router-dom'
-import { CalendarDays, List, Trophy, UserCircle }     from 'lucide-react'
+import { NavLink }                                              from 'react-router-dom'
+import { CalendarDays, List, History, Trophy, UserCircle }     from 'lucide-react'
 
 const NAV_ITEMS = [
   { to: '/',          label: 'Today',    Icon: CalendarDays },
   { to: '/fixtures',  label: 'Fixtures', Icon: List         },
+  { to: '/results',   label: 'Results',  Icon: History      },
   { to: '/table',     label: 'Table',    Icon: Trophy       },
   { to: '/settings',  label: 'Settings', Icon: UserCircle   },
 ]
