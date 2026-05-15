@@ -21,7 +21,7 @@ export default function ResultCard({ game }) {
   return (
     <article
       className="flex rounded-2xl mb-2 overflow-hidden shadow-sm border border-gaa-border"
-      style={{ backgroundColor: '#1a1a1a' }}
+      style={{ backgroundColor: '#252525' }}
       aria-label={`Result: ${game.home_team} ${game.home_score} ${game.away_team} ${game.away_score}`}
     >
       <div className="w-1.5 shrink-0 bg-gaa-minor" aria-hidden="true" />

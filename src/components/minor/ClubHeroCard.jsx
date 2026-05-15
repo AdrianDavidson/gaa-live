@@ -33,7 +33,7 @@ export default function ClubHeroCard({ nextGame }) {
       style={{
         background: theme.primary
           ? `linear-gradient(145deg, ${theme.primary}28 0%, #1a1a1a 60%)`
-          : '#1a1a1a',
+          : '#252525',
         borderColor: theme.primary ? `${theme.primary}40` : '#2e2e2e',
       }}
     >

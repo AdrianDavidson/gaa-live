@@ -60,7 +60,7 @@ export function SkeletonMinorGameCard() {
   return (
     <div
       className="flex rounded-2xl mb-2 overflow-hidden shadow-sm border border-gaa-border"
-      style={{ backgroundColor: '#1a1a1a' }}
+      style={{ backgroundColor: '#252525' }}
       aria-hidden="true"
     >
       <div className="w-1.5 shrink-0 bg-gaa-surface-raised" />
@@ -112,7 +112,7 @@ export function SkeletonResultCard() {
   return (
     <div
       className="flex rounded-2xl mb-2 overflow-hidden shadow-sm border border-gaa-border"
-      style={{ backgroundColor: '#1a1a1a' }}
+      style={{ backgroundColor: '#252525' }}
       aria-hidden="true"
     >
       <div className="w-1.5 shrink-0 bg-gaa-surface-raised" />

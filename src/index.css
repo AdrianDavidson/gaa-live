@@ -57,18 +57,18 @@ html[data-theme="county"] {
 
 /* ── Dark mode overrides ───────────────────────────────────────────── */
 
-html.dark body             { background-color: #0f0f0f; color: #f0f0f0; }
-html.dark                  { --bg-app: #0f0f0f; }
+html.dark body             { background-color: #1a1a1a; color: #f0f0f0; }
+html.dark                  { --bg-app: #1a1a1a; }
 
 /* Surfaces */
-html.dark .bg-white        { background-color: #1a1a1a; }
-html.dark .bg-gray-50      { background-color: #0f0f0f; }
-html.dark .bg-gray-100     { background-color: #242424; }
+html.dark .bg-white        { background-color: #252525; }
+html.dark .bg-gray-50      { background-color: #1a1a1a; }
+html.dark .bg-gray-100     { background-color: #303030; }
 
 /* Borders */
-html.dark .border-gray-100 { border-color: #2a2b3d; }
-html.dark .border-gray-200 { border-color: #2e2e2e; }
-html.dark .border-gray-300 { border-color: #3a3a3a; }
+html.dark .border-gray-100 { border-color: #303030; }
+html.dark .border-gray-200 { border-color: #3d3d3d; }
+html.dark .border-gray-300 { border-color: #4a4a4a; }
 
 /* Typography */
 html.dark .text-gaa-dark   { color: #f0f0f0; }

@@ -23,10 +23,10 @@ export default {
           minor:        '#7C3AED',
           'minor-soft': '#F3EFFE',
           // Dark UI tokens
-          bg:              '#0f0f0f',
-          surface:         '#1a1a1a',
-          'surface-raised':'#242424',
-          border:          '#2e2e2e',
+          bg:              '#1a1a1a',
+          surface:         '#252525',
+          'surface-raised':'#303030',
+          border:          '#3d3d3d',
           text:            '#f0f0f0',
           'text-muted':    '#888888',
           // Semantic

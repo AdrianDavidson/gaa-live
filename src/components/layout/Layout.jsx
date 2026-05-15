@@ -20,8 +20,8 @@ export default function Layout() {
     if (fontSize === 'large') html.classList.add('font-large')
     if (fontSize === 'xl')    html.classList.add('font-xl')
 
-    // Dark mode
-    html.classList.toggle('dark', darkMode)
+    // Always dark-first — persisted user preference not yet exposed as a toggle
+    html.classList.add('dark')
 
     // Theme attribute — drives CSS variable blocks in index.css
     html.setAttribute('data-theme', theme ?? 'default')
