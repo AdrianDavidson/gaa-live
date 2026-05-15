@@ -1,144 +1,481 @@
-import { useState, useEffect } from 'react'
-import { useAuth }             from '@clerk/react'
-import { supabase }            from '../lib/supabase'
-import Spinner                 from '../components/ui/Spinner'
+import { useState, useEffect }  from 'react'
+import { useAuth }              from '@clerk/react'
+import { X, ChevronDown }       from 'lucide-react'
+import { supabase }             from '../lib/supabase'
+import { compPillLabel }        from '../utils/formatters'
 
-// ─── Status helpers ───────────────────────────────────────────────────────────
+const PERIODS = ['Q1', 'HT', 'Q2', 'FT']
 
-function proStatus(updatedAt) {
-  if (!updatedAt) return { label: 'No update', colour: 'text-gray-400' }
-  const mins = (Date.now() - new Date(updatedAt)) / 60_000
-  if (mins < 20)  return { label: 'Active',  colour: 'text-green-600' }
-  if (mins < 45)  return { label: 'Quiet',   colour: 'text-amber-500' }
-  return           { label: 'Silent',  colour: 'text-red-500' }
+// ─── Reusable searchable bottom-sheet picker ─────────────────────────────────
+
+function SearchModal({ title, items, onSelect, onClose }) {
+  const [q, setQ] = useState('')
+  const filtered  = items.filter((item) =>
+    item.name.toLowerCase().includes(q.toLowerCase())
+  )
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/60"
+      onClick={onClose}
+    >
+      <div
+        className="bg-gaa-surface w-full max-w-lg rounded-t-2xl p-4 pb-10 border-t border-gaa-border"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-black text-gaa-text">{title}</h2>
+          <button onClick={onClose} className="text-gaa-text-muted min-h-[44px] px-2">
+            <X size={20} />
+          </button>
+        </div>
+        <input
+          autoFocus
+          type="search"
+          placeholder="Search…"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          className="w-full bg-gaa-surface-raised border border-gaa-border rounded-xl px-3 py-2.5 text-sm text-gaa-text placeholder:text-gaa-text-muted mb-3 focus:outline-none focus:ring-2 focus:ring-gaa-minor"
+        />
+        <ul className="max-h-72 overflow-y-auto divide-y divide-gaa-border">
+          {filtered.map((item) => (
+            <li key={item.id}>
+              <button
+                onClick={() => { onSelect(item); onClose() }}
+                className="w-full text-left py-3 px-2 min-h-[48px] text-gaa-text font-semibold text-sm hover:text-gaa-amber transition-colors"
+              >
+                {item.name}
+              </button>
+            </li>
+          ))}
+          {filtered.length === 0 && (
+            <li className="py-6 text-center text-gaa-text-muted text-sm">Nothing found</li>
+          )}
+        </ul>
+      </div>
+    </div>
+  )
 }
 
-function formatTime(ts) {
-  if (!ts) return '—'
-  return new Date(ts).toLocaleTimeString('en-IE', { hour: '2-digit', minute: '2-digit' })
+// ─── Tap-to-open field (replaces dropdowns) ───────────────────────────────────
+
+function PickerField({ placeholder, value, onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="w-full flex items-center justify-between bg-gaa-surface-raised border border-gaa-border rounded-xl px-4 py-3 text-left min-h-[52px] transition-colors hover:border-gaa-text-muted"
+    >
+      <span className={`text-sm truncate ${value ? 'text-gaa-text font-semibold' : 'text-gaa-text-muted'}`}>
+        {value || placeholder}
+      </span>
+      <ChevronDown size={16} className="text-gaa-text-muted shrink-0 ml-2" />
+    </button>
+  )
+}
+
+// ─── Two-tap delete button ────────────────────────────────────────────────────
+
+function DeleteBtn({ onConfirm }) {
+  const [armed, setArmed] = useState(false)
+  useEffect(() => {
+    if (!armed) return
+    const t = setTimeout(() => setArmed(false), 3000)
+    return () => clearTimeout(t)
+  }, [armed])
+  return armed ? (
+    <div className="flex items-center gap-1">
+      <button
+        onClick={() => { onConfirm(); setArmed(false) }}
+        className="text-red-400 font-black text-xs min-h-[36px] px-2"
+      >
+        Confirm
+      </button>
+      <button onClick={() => setArmed(false)} className="text-gaa-text-muted text-xs min-h-[36px] px-1">
+        ✕
+      </button>
+    </div>
+  ) : (
+    <button onClick={() => setArmed(true)} className="text-gaa-text-muted font-bold text-xs min-h-[36px] px-2">
+      Delete
+    </button>
+  )
+}
+
+// ─── Inline score editor ─────────────────────────────────────────────────────
+
+function parseScore(str) {
+  if (!str) return { g: 0, p: 0 }
+  const [g = 0, p = 0] = str.split('-').map(Number)
+  return { g: Number(g) || 0, p: Number(p) || 0 }
+}
+
+function InlineScoreEditor({ game, onSaved }) {
+  const { getToken } = useAuth()
+  const hi           = parseScore(game.home_score)
+  const ai           = parseScore(game.away_score)
+
+  const [score,  setScore]  = useState({ hg: hi.g, hp: hi.p, ag: ai.g, ap: ai.p })
+  const [period, setPeriod] = useState(game.period ?? 'Q1')
+  const [saving, setSaving] = useState(false)
+  const [flash,  setFlash]  = useState(null) // 'ok' | 'err'
+
+  async function save() {
+    if (saving) return
+    setSaving(true)
+    try {
+      const token = await getToken()
+      const res   = await fetch('/api/submit-score', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          gameId:    game.id,
+          homeScore: `${score.hg}-${String(score.hp).padStart(2, '0')}`,
+          awayScore: `${score.ag}-${String(score.ap).padStart(2, '0')}`,
+          period,
+        }),
+      })
+      setFlash(res.ok ? 'ok' : 'err')
+      if (res.ok) onSaved?.()
+    } catch {
+      setFlash('err')
+    } finally {
+      setSaving(false)
+      setTimeout(() => setFlash(null), 2500)
+    }
+  }
+
+  function ScoreRow({ label, goals, points, onGoal, onPoint, onMinus }) {
+    return (
+      <div className="mb-3">
+        <div className="flex items-center justify-between mb-1.5">
+          <span className="text-xs font-bold text-gaa-text-muted truncate mr-3">{label}</span>
+          <span className="font-barlow text-xl font-black text-gaa-text tabular-nums shrink-0">
+            {goals}-{String(points).padStart(2, '0')}
+          </span>
+        </div>
+        <div className="flex gap-2">
+          <button type="button" onClick={onGoal}
+            className="flex-1 h-12 rounded-xl font-black text-white text-xs flex flex-col items-center justify-center gap-0.5 active:opacity-70"
+            style={{ backgroundColor: '#e8a020' }}>
+            <span className="text-[9px] opacity-70 uppercase">Goal</span>
+            <span>+3</span>
+          </button>
+          <button type="button" onClick={onPoint}
+            className="flex-1 h-12 rounded-xl bg-gaa-minor font-black text-white text-xs flex flex-col items-center justify-center gap-0.5 active:opacity-70">
+            <span className="text-[9px] opacity-70 uppercase">Point</span>
+            <span>+1</span>
+          </button>
+          <button type="button" onClick={onMinus}
+            className="w-12 h-12 rounded-xl bg-gaa-surface-raised border border-gaa-border text-gaa-text-muted text-xl font-black active:opacity-70">
+            −
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="mt-3 pt-3 border-t border-gaa-border">
+      <ScoreRow
+        label={game.home_team}
+        goals={score.hg} points={score.hp}
+        onGoal={() => setScore((s) => ({ ...s, hg: s.hg + 1 }))}
+        onPoint={() => setScore((s) => ({ ...s, hp: s.hp + 1 }))}
+        onMinus={() => setScore((s) => {
+          if (s.hp > 0) return { ...s, hp: s.hp - 1 }
+          if (s.hg > 0) return { ...s, hg: s.hg - 1 }
+          return s
+        })}
+      />
+      <ScoreRow
+        label={game.away_team}
+        goals={score.ag} points={score.ap}
+        onGoal={() => setScore((s) => ({ ...s, ag: s.ag + 1 }))}
+        onPoint={() => setScore((s) => ({ ...s, ap: s.ap + 1 }))}
+        onMinus={() => setScore((s) => {
+          if (s.ap > 0) return { ...s, ap: s.ap - 1 }
+          if (s.ag > 0) return { ...s, ag: s.ag - 1 }
+          return s
+        })}
+      />
+
+      {/* Period */}
+      <div className="flex gap-1.5 mb-3">
+        {PERIODS.map((p) => (
+          <button key={p} type="button" onClick={() => setPeriod(p)}
+            className={`flex-1 py-2 rounded-xl text-xs font-black border transition-colors ${
+              period === p
+                ? 'bg-gaa-minor text-white border-gaa-minor'
+                : 'bg-gaa-surface-raised text-gaa-text-muted border-gaa-border'
+            }`}
+          >
+            {p}
+          </button>
+        ))}
+      </div>
+
+      <button type="button" onClick={save} disabled={saving}
+        className={`w-full py-3 rounded-xl font-black text-sm transition-colors ${
+          flash === 'ok'  ? 'bg-emerald-700 text-white' :
+          flash === 'err' ? 'bg-red-800 text-white' :
+                            'bg-gaa-minor text-white disabled:opacity-50'
+        }`}
+      >
+        {saving ? 'Saving…' : flash === 'ok' ? '✓ Saved' : flash === 'err' ? 'Failed — retry' : 'Save Score'}
+      </button>
+    </div>
+  )
 }
 
 // ─── Live tab ─────────────────────────────────────────────────────────────────
 
 function LiveTab() {
-  const [games, setGames] = useState([])
+  const [games,    setGames]    = useState([])
+  const [expanded, setExpanded] = useState(null)
+
+  function loadGames() {
+    const today = new Date().toISOString().split('T')[0]
+    fetch(`/api/games?date=${today}`)
+      .then((r) => r.json())
+      .then((d) => setGames(Array.isArray(d) ? d : []))
+  }
 
   useEffect(() => {
-    const today = new Date().toISOString().split('T')[0]
-    const loadGames = () => fetch(`/api/games?date=${today}`).then((r) => r.json()).then((d) => setGames(Array.isArray(d) ? d : []))
     loadGames()
-
     const ch = supabase
-      .channel('admin-score-updates')
-      .on('postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'score_updates' },
-        loadGames
-      )
+      .channel('admin-live')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'score_updates' }, loadGames)
       .subscribe()
-
     return () => { supabase.removeChannel(ch) }
   }, [])
 
-  if (!games.length) return <p className="text-gray-400 text-sm text-center py-10">No games today.</p>
+  function proStatus(updatedAt) {
+    if (!updatedAt) return { label: 'No update', cls: 'text-gaa-text-muted' }
+    const mins = (Date.now() - new Date(updatedAt)) / 60_000
+    if (mins < 20) return { label: 'Active',  cls: 'text-emerald-400' }
+    if (mins < 45) return { label: 'Quiet',   cls: 'text-gaa-amber' }
+    return             { label: 'Silent',  cls: 'text-red-400' }
+  }
+
+  if (!games.length) return (
+    <p className="text-gaa-text-muted text-sm text-center py-10">No games scheduled for today.</p>
+  )
 
   return (
-    <ul className="space-y-3">
+    <div className="space-y-2">
       {games.map((g) => {
-        const st = proStatus(g.updated_at)
+        const st   = proStatus(g.updated_at)
+        const isEx = expanded === g.id
         return (
-          <li key={g.id} className="bg-white border border-gray-200 rounded-xl p-3">
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-xs font-bold text-gaa-minor">{g.competition_short}</span>
-              <span className={`text-xs font-bold ${st.colour}`}>● {st.label}</span>
-            </div>
-            <div className="flex items-center justify-between font-bold text-sm">
-              <span>{g.home_team}</span>
-              <span className="text-base tabular-nums text-gaa-minor">
-                {g.home_score ?? '–'} – {g.away_score ?? '–'}
+          <div key={g.id} className="bg-gaa-surface border border-gaa-border rounded-2xl p-3">
+            {/* Competition + PRO status */}
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[10px] font-bold text-gaa-minor">
+                {compPillLabel(g.competition_name, g.competition_short)}
               </span>
-              <span>{g.away_team}</span>
+              <span className={`text-[10px] font-bold ${st.cls}`}>● {st.label}</span>
             </div>
-            <div className="flex justify-between text-[10px] text-gray-400 mt-1">
-              <span>{g.period ?? 'Not started'}</span>
-              <span>Updated {formatTime(g.updated_at)}</span>
+
+            {/* Scoreline */}
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <span className="font-bold text-sm text-gaa-text truncate">{g.home_team}</span>
+              <span className="font-barlow text-2xl font-black text-gaa-text tabular-nums shrink-0">
+                {g.home_score ?? '—'} – {g.away_score ?? '—'}
+              </span>
+              <span className="font-bold text-sm text-gaa-text truncate text-right">{g.away_team}</span>
             </div>
-          </li>
+
+            {/* Period + Update button */}
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] text-gaa-text-muted">
+                {g.period ?? 'Not started'}
+              </span>
+              <button
+                onClick={() => setExpanded(isEx ? null : g.id)}
+                className={`text-xs font-bold min-h-[32px] px-2 transition-colors ${
+                  isEx ? 'text-gaa-text-muted' : 'text-gaa-minor'
+                }`}
+              >
+                {isEx ? '▲ Close' : '▼ Update Score'}
+              </button>
+            </div>
+
+            {isEx && (
+              <InlineScoreEditor game={g} onSaved={loadGames} />
+            )}
+          </div>
         )
       })}
-    </ul>
+    </div>
   )
 }
 
 // ─── Games tab ────────────────────────────────────────────────────────────────
 
+const BLANK_GAME = { homeClub: null, awayClub: null, competition: null, venue: '', startTime: '', pro: null }
+
 function GamesTab() {
-  const { getToken }                = useAuth()
-  const [clubs, setClubs]           = useState([])
-  const [competitions, setComps]    = useState([])
-  const [pros, setPros]             = useState([])
-  const [games, setGames]           = useState([])
-  const [form, setForm]             = useState({ homeClubId: '', awayClubId: '', competitionId: '', venue: '', startTime: '', assignedProId: '' })
-  const [msg, setMsg]               = useState(null)
+  const { getToken } = useAuth()
+
+  const [clubs, setClubs]       = useState([])
+  const [comps, setComps]       = useState([])
+  const [pros, setPros]         = useState([])
+  const [games, setGames]       = useState([])
+  const [form, setForm]         = useState(BLANK_GAME)
+  const [picker, setPicker]     = useState(null) // 'home'|'away'|'comp'|'pro'
+  const [msg, setMsg]           = useState(null)
+
+  function flash(text) { setMsg(text); setTimeout(() => setMsg(null), 4000) }
+
+  function loadGames() {
+    const from = new Date().toISOString().split('T')[0]
+    const to   = new Date(Date.now() + 30 * 86_400_000).toISOString().split('T')[0]
+    fetch(`/api/games?date=${from}&dateTo=${to}`)
+      .then((r) => r.json())
+      .then((d) => setGames(Array.isArray(d) ? d : []))
+  }
 
   useEffect(() => {
     supabase.from('clubs').select('id, name').order('name').then(({ data }) => setClubs(data ?? []))
-    supabase.from('competitions').select('id, short_name').order('short_name').then(({ data }) => setComps(data ?? []))
+    supabase.from('competitions').select('id, name, short_name').order('name').then(({ data }) => setComps(data ?? []))
     supabase.from('pros').select('id, name').order('name').then(({ data }) => setPros(data ?? []))
-    const today = new Date().toISOString().split('T')[0]
-    fetch(`/api/games?date=${today}`).then((r) => r.json()).then((d) => setGames(Array.isArray(d) ? d : []))
+    loadGames()
   }, [])
 
-  async function submit(e) {
+  async function addGame(e) {
     e.preventDefault()
+    if (!form.homeClub || !form.awayClub || !form.competition || !form.startTime) {
+      flash('Please fill all required fields')
+      return
+    }
     const token = await getToken()
     const res   = await fetch('/api/admin/games', {
       method:  'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body:    JSON.stringify(form),
+      body: JSON.stringify({
+        homeClubId:    form.homeClub.id,
+        awayClubId:    form.awayClub.id,
+        competitionId: form.competition.id,
+        venue:         form.venue,
+        startTime:     form.startTime,
+        assignedProId: form.pro?.id ?? '',
+      }),
     })
-    if (res.ok) { setMsg('Game added'); const today = new Date().toISOString().split('T')[0]; fetch(`/api/games?date=${today}`).then((r) => r.json()).then((d) => setGames(Array.isArray(d) ? d : [])) }
-    else setMsg('Error — check fields')
+    if (res.ok) {
+      flash('✓ Fixture added')
+      setForm(BLANK_GAME)
+      loadGames()
+    } else {
+      const err = await res.json().catch(() => ({}))
+      flash(`Error: ${err.error ?? 'check fields'}`)
+    }
   }
 
-  async function deleteGame(id, startTime) {
+  async function deleteGame(id) {
     const token = await getToken()
     await fetch(`/api/admin/games?id=${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } })
     setGames((prev) => prev.filter((g) => g.id !== id))
   }
 
+  function fmtDate(ts) {
+    if (!ts) return ''
+    const d = new Date(ts)
+    return d.toLocaleDateString('en-IE', { weekday: 'short', day: 'numeric', month: 'short' }) +
+      ' · ' + d.toLocaleTimeString('en-IE', { hour: '2-digit', minute: '2-digit' })
+  }
+
+  // Competition items with readable labels for the picker
+  const compPickerItems = comps.map((c) => ({ ...c, name: compPillLabel(c.name, c.short_name) }))
+
   return (
     <div>
-      <form onSubmit={submit} className="space-y-3 mb-6">
-        <h3 className="font-black text-gray-900">Add Game</h3>
-        <select value={form.homeClubId} onChange={(e) => setForm((f) => ({ ...f, homeClubId: e.target.value }))} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" required>
-          <option value="">Home Club</option>
-          {clubs.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-        </select>
-        <select value={form.awayClubId} onChange={(e) => setForm((f) => ({ ...f, awayClubId: e.target.value }))} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" required>
-          <option value="">Away Club</option>
-          {clubs.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-        </select>
-        <select value={form.competitionId} onChange={(e) => setForm((f) => ({ ...f, competitionId: e.target.value }))} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" required>
-          <option value="">Competition</option>
-          {competitions.map((c) => <option key={c.id} value={c.id}>{c.short_name}</option>)}
-        </select>
-        <input type="text" placeholder="Venue" value={form.venue} onChange={(e) => setForm((f) => ({ ...f, venue: e.target.value }))} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
-        <input type="datetime-local" value={form.startTime} onChange={(e) => setForm((f) => ({ ...f, startTime: e.target.value }))} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" required />
-        <select value={form.assignedProId} onChange={(e) => setForm((f) => ({ ...f, assignedProId: e.target.value }))} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
-          <option value="">Assign PRO (optional)</option>
-          {pros.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-        </select>
-        <button type="submit" className="w-full bg-gaa-minor text-white font-bold py-2.5 rounded-xl">Add Game</button>
-        {msg && <p className="text-sm text-center text-gray-500">{msg}</p>}
+      {/* Add fixture form */}
+      <form onSubmit={addGame} className="bg-gaa-surface border border-gaa-border rounded-2xl p-4 mb-5 space-y-2.5">
+        <h3 className="font-barlow text-lg font-black text-gaa-text mb-1">Add Fixture</h3>
+
+        <PickerField placeholder="Home Club *" value={form.homeClub?.name}    onClick={() => setPicker('home')} />
+        <PickerField placeholder="Away Club *" value={form.awayClub?.name}    onClick={() => setPicker('away')} />
+        <PickerField
+          placeholder="Competition *"
+          value={form.competition ? compPillLabel(form.competition.name, form.competition.short_name) : null}
+          onClick={() => setPicker('comp')}
+        />
+
+        <input
+          type="datetime-local"
+          value={form.startTime}
+          onChange={(e) => setForm((f) => ({ ...f, startTime: e.target.value }))}
+          className="w-full bg-gaa-surface-raised border border-gaa-border rounded-xl px-4 py-3 text-sm text-gaa-text focus:outline-none focus:ring-2 focus:ring-gaa-minor min-h-[52px]"
+          required
+        />
+        <input
+          type="text"
+          placeholder="Venue (optional)"
+          value={form.venue}
+          onChange={(e) => setForm((f) => ({ ...f, venue: e.target.value }))}
+          className="w-full bg-gaa-surface-raised border border-gaa-border rounded-xl px-4 py-3 text-sm text-gaa-text placeholder:text-gaa-text-muted focus:outline-none focus:ring-2 focus:ring-gaa-minor min-h-[52px]"
+        />
+        <PickerField placeholder="Assign PRO (optional)" value={form.pro?.name} onClick={() => setPicker('pro')} />
+
+        <button type="submit" className="w-full bg-gaa-minor text-white font-black py-3.5 rounded-xl text-sm">
+          Add Fixture
+        </button>
+        {msg && (
+          <p className={`text-sm text-center font-bold ${msg.startsWith('✓') ? 'text-emerald-400' : 'text-red-400'}`}>
+            {msg}
+          </p>
+        )}
       </form>
 
-      <h3 className="font-black text-gray-900 mb-2">Today's Games</h3>
+      {/* Upcoming list */}
+      <h3 className="font-barlow text-base font-black text-gaa-text mb-2">
+        Upcoming Fixtures <span className="text-gaa-text-muted font-sans text-xs font-normal">(next 30 days)</span>
+      </h3>
+      {games.length === 0 && (
+        <p className="text-gaa-text-muted text-sm text-center py-6">No upcoming fixtures.</p>
+      )}
       {games.map((g) => (
-        <div key={g.id} className="flex items-center justify-between border border-gray-200 rounded-xl p-3 mb-2 text-sm">
-          <span className="font-semibold">{g.home_team} vs {g.away_team}</span>
-          <button onClick={() => deleteGame(g.id, g.start_time)} className="text-red-500 font-bold text-xs min-h-[36px] px-2">Delete</button>
+        <div key={g.id} className="bg-gaa-surface border border-gaa-border rounded-xl p-3 mb-2">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] font-bold text-gaa-minor mb-0.5">
+                {compPillLabel(g.competition_name, g.competition_short)}
+              </p>
+              <p className="text-sm font-bold text-gaa-text">
+                {g.home_team} <span className="text-gaa-text-muted font-normal">vs</span> {g.away_team}
+              </p>
+              <p className="text-[10px] text-gaa-text-muted mt-0.5">
+                {fmtDate(g.start_time)}{g.venue ? ` · ${g.venue}` : ''}
+              </p>
+            </div>
+            <DeleteBtn onConfirm={() => deleteGame(g.id)} />
+          </div>
         </div>
       ))}
+
+      {/* Pickers */}
+      {picker === 'home' && (
+        <SearchModal title="Home Club" items={clubs}
+          onSelect={(c) => setForm((f) => ({ ...f, homeClub: c }))}
+          onClose={() => setPicker(null)} />
+      )}
+      {picker === 'away' && (
+        <SearchModal title="Away Club" items={clubs}
+          onSelect={(c) => setForm((f) => ({ ...f, awayClub: c }))}
+          onClose={() => setPicker(null)} />
+      )}
+      {picker === 'comp' && (
+        <SearchModal title="Competition" items={compPickerItems}
+          onSelect={(item) => setForm((f) => ({ ...f, competition: comps.find((c) => c.id === item.id) }))}
+          onClose={() => setPicker(null)} />
+      )}
+      {picker === 'pro' && (
+        <SearchModal
+          title="Assign PRO"
+          items={[{ id: '', name: 'No PRO assigned' }, ...pros]}
+          onSelect={(p) => setForm((f) => ({ ...f, pro: p.id ? p : null }))}
+          onClose={() => setPicker(null)} />
+      )}
     </div>
   )
 }
@@ -146,12 +483,15 @@ function GamesTab() {
 // ─── PROs tab ─────────────────────────────────────────────────────────────────
 
 function PROsTab() {
-  const { getToken }              = useAuth()
-  const [pros, setPros]           = useState([])
-  const [clubs, setClubs]         = useState([])
-  const [form, setForm]           = useState({ clerkId: '', name: '', email: '', clubId: '' })
-  const [msg, setMsg]             = useState(null)
-  const [loading, setLoading]     = useState(true)
+  const { getToken }        = useAuth()
+  const [pros, setPros]     = useState([])
+  const [clubs, setClubs]   = useState([])
+  const [form, setForm]     = useState({ clerkId: '', name: '', email: '', clubId: '' })
+  const [msg, setMsg]       = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [picker, setPicker] = useState(false)
+
+  function flash(text) { setMsg(text); setTimeout(() => setMsg(null), 3000) }
 
   useEffect(() => {
     async function load() {
@@ -159,9 +499,7 @@ function PROsTab() {
       await Promise.all([
         supabase.from('clubs').select('id, name').order('name').then(({ data }) => setClubs(data ?? [])),
         fetch('/api/admin/pros', { headers: { Authorization: `Bearer ${token}` } })
-          .then((r) => r.ok ? r.json() : [])
-          .then(setPros)
-          .catch(() => []),
+          .then((r) => r.ok ? r.json() : []).then(setPros).catch(() => []),
       ])
       setLoading(false)
     }
@@ -176,8 +514,14 @@ function PROsTab() {
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body:    JSON.stringify(form),
     })
-    if (res.ok) { const p = await res.json(); setPros((prev) => [...prev, p]); setMsg('PRO added'); setForm({ clerkId: '', name: '', email: '', clubId: '' }) }
-    else setMsg('Error — check fields')
+    if (res.ok) {
+      const p = await res.json()
+      setPros((prev) => [...prev, p])
+      flash('✓ PRO added')
+      setForm({ clerkId: '', name: '', email: '', clubId: '' })
+    } else {
+      flash('Error — check fields')
+    }
   }
 
   async function deletePro(id) {
@@ -186,35 +530,55 @@ function PROsTab() {
     setPros((prev) => prev.filter((p) => p.id !== id))
   }
 
+  const selectedClub = clubs.find((c) => c.id === form.clubId)
+
+  const inputCls = 'w-full bg-gaa-surface-raised border border-gaa-border rounded-xl px-4 py-3 text-sm text-gaa-text placeholder:text-gaa-text-muted focus:outline-none focus:ring-2 focus:ring-gaa-minor min-h-[52px]'
+
   return (
     <div>
-      <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 mb-5 text-xs text-blue-800">
-        First create the user's account in the Clerk dashboard, then add their Clerk User ID here.
+      <div className="bg-gaa-surface border border-gaa-border rounded-xl p-3 mb-4 text-xs text-gaa-text-muted leading-relaxed">
+        First create the user's account in the <span className="text-gaa-text font-semibold">Clerk Dashboard</span>, then paste their User ID below.
       </div>
 
-      <form onSubmit={addPro} className="space-y-3 mb-6">
-        <h3 className="font-black text-gray-900">Add PRO</h3>
-        <input type="text"  placeholder="Name"        value={form.name}    onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" required />
-        <input type="email" placeholder="Email"       value={form.email}   onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" required />
-        <input type="text"  placeholder="Clerk User ID" value={form.clerkId} onChange={(e) => setForm((f) => ({ ...f, clerkId: e.target.value }))} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono text-xs" required />
-        <select value={form.clubId} onChange={(e) => setForm((f) => ({ ...f, clubId: e.target.value }))} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
-          <option value="">Club (optional)</option>
-          {clubs.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-        </select>
-        <button type="submit" className="w-full bg-gaa-minor text-white font-bold py-2.5 rounded-xl">Add PRO</button>
-        {msg && <p className="text-sm text-center text-gray-500">{msg}</p>}
+      <form onSubmit={addPro} className="bg-gaa-surface border border-gaa-border rounded-2xl p-4 mb-5 space-y-2.5">
+        <h3 className="font-barlow text-lg font-black text-gaa-text mb-1">Add PRO</h3>
+        <input type="text"  placeholder="Full name"  value={form.name}    onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}    className={inputCls} required />
+        <input type="email" placeholder="Email"      value={form.email}   onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}   className={inputCls} required />
+        <input type="text"  placeholder="Clerk User ID  (user_…)" value={form.clerkId} onChange={(e) => setForm((f) => ({ ...f, clerkId: e.target.value }))} className={`${inputCls} font-mono`} required />
+        <PickerField placeholder="Club (optional)" value={selectedClub?.name} onClick={() => setPicker(true)} />
+        <button type="submit" className="w-full bg-gaa-minor text-white font-black py-3.5 rounded-xl text-sm">
+          Add PRO
+        </button>
+        {msg && (
+          <p className={`text-sm text-center font-bold ${msg.startsWith('✓') ? 'text-emerald-400' : 'text-red-400'}`}>{msg}</p>
+        )}
       </form>
 
-      {loading && <Spinner label="Loading PROs…" />}
+      {loading && <p className="text-gaa-text-muted text-sm text-center py-4">Loading…</p>}
+      {!loading && pros.length === 0 && (
+        <p className="text-gaa-text-muted text-sm text-center py-4">No PROs added yet.</p>
+      )}
       {!loading && pros.map((p) => (
-        <div key={p.id} className="flex items-center justify-between border border-gray-200 rounded-xl p-3 mb-2">
-          <div>
-            <p className="font-semibold text-sm">{p.name}</p>
-            <p className="text-xs text-gray-400">{p.email} · {p.club?.name ?? 'No club'}</p>
+        <div key={p.id} className="bg-gaa-surface border border-gaa-border rounded-xl p-3 mb-2">
+          <div className="flex items-center justify-between gap-2">
+            <div className="min-w-0">
+              <p className="font-bold text-sm text-gaa-text">{p.name}</p>
+              <p className="text-xs text-gaa-text-muted">{p.email}</p>
+              <p className="text-xs text-gaa-text-muted">{p.club?.name ?? 'No club assigned'}</p>
+            </div>
+            <DeleteBtn onConfirm={() => deletePro(p.id)} />
           </div>
-          <button onClick={() => deletePro(p.id)} className="text-red-500 font-bold text-xs min-h-[36px] px-2">Remove</button>
         </div>
       ))}
+
+      {picker && (
+        <SearchModal
+          title="Club"
+          items={[{ id: '', name: 'No club' }, ...clubs]}
+          onSelect={(c) => { setForm((f) => ({ ...f, clubId: c.id })) }}
+          onClose={() => setPicker(false)}
+        />
+      )}
     </div>
   )
 }
@@ -227,20 +591,21 @@ export default function Admin() {
   const [activeTab, setActiveTab] = useState('Live')
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 max-w-lg mx-auto">
+    <div className="min-h-screen bg-gaa-bg p-4 max-w-lg mx-auto">
       <div className="flex items-center justify-between mb-5">
-        <h1 className="text-xl font-black text-gray-900">Admin</h1>
-        <a href="/" className="text-xs font-bold text-gaa-minor">← Back</a>
+        <h1 className="font-barlow text-2xl font-black text-gaa-text">Admin</h1>
+        <a href="/" className="text-xs font-bold text-gaa-text-muted hover:text-gaa-text transition-colors">
+          ← Back
+        </a>
       </div>
 
-      {/* Tabs */}
-      <div className="flex bg-white border border-gray-200 rounded-xl mb-5 p-1 gap-1">
+      <div className="flex bg-gaa-surface border border-gaa-border rounded-xl mb-5 p-1 gap-1">
         {TABS.map((t) => (
           <button
             key={t}
             onClick={() => setActiveTab(t)}
-            className={`flex-1 py-2 rounded-lg text-sm font-bold transition-colors ${
-              activeTab === t ? 'bg-gaa-minor text-white' : 'text-gray-500'
+            className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-colors ${
+              activeTab === t ? 'bg-gaa-minor text-white' : 'text-gaa-text-muted hover:text-gaa-text'
             }`}
           >
             {t}
