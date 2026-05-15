@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 async function fetchResults({ county = 'Cork', grade = 'minor', code = 'hurling', season } = {}) {
   const params = new URLSearchParams({ county, grade, code })
   if (season) params.set('season', season)
-  const res = await fetch(`/api/results?${params}`)
+  const res = await fetch(`/api/games?past=true&${params}`)
   if (!res.ok) throw new Error('Failed to fetch results')
   return res.json()
 }
