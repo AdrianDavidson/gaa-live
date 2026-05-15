@@ -68,7 +68,7 @@ export default function Fixtures() {
                 className={`shrink-0 text-xs font-bold px-3 py-1.5 rounded-full border transition-colors min-h-[36px] ${
                   myClubsOnly
                     ? 'bg-gaa-minor text-white border-gaa-minor'
-                    : 'bg-white text-gray-600 border-gray-300'
+                    : 'bg-gaa-surface text-gaa-text-muted border-gaa-border'
                 }`}
               >
                 My Club
@@ -79,7 +79,7 @@ export default function Fixtures() {
               className={`shrink-0 text-xs font-bold px-3 py-1.5 rounded-full border transition-colors min-h-[36px] ${
                 competitionFilter === 'all'
                   ? 'bg-gaa-minor text-white border-gaa-minor'
-                  : 'bg-white text-gray-600 border-gray-300'
+                  : 'bg-gaa-surface text-gaa-text-muted border-gaa-border'
               }`}
             >
               All
@@ -91,7 +91,7 @@ export default function Fixtures() {
                 className={`shrink-0 text-xs font-bold px-3 py-1.5 rounded-full border transition-colors min-h-[36px] ${
                   competitionFilter === c.id
                     ? 'bg-gaa-minor text-white border-gaa-minor'
-                    : 'bg-white text-gray-600 border-gray-300'
+                    : 'bg-gaa-surface text-gaa-text-muted border-gaa-border'
                 }`}
               >
                 {c.short_name}
@@ -113,8 +113,8 @@ export default function Fixtures() {
 
           {dateKeys.map((date) => (
             <section key={date} className="mb-5">
-              <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-2">
-                <span className="w-1 h-3 rounded-full bg-gray-300 shrink-0" aria-hidden="true" />
+              <h2 className="text-xs font-bold text-gaa-text-muted uppercase tracking-wider mb-2 flex items-center gap-2">
+                <span className="w-1 h-3 rounded-full bg-gaa-border shrink-0" aria-hidden="true" />
                 {formatDateGroup(date)}
               </h2>
               {grouped[date].map((g) => <FixtureCard key={g.id} game={g} />)}

@@ -15,75 +15,95 @@
   }
 }
 
-/* Font size overrides applied to <html> via Settings */
+/* Font size overrides */
 html.font-large { font-size: 20px; }
 html.font-xl    { font-size: 24px; }
 
 /* ── Theme variables ───────────────────────────────────────────────── */
 
 :root {
-  --gaa-primary:      #006633;
-  --gaa-accent:       #FFD700;
-  --bg-app:           #f9fafb;
+  --gaa-primary: #006633;
+  --gaa-accent:  #FFD700;
+  --bg-app:      #f9fafb;
 }
 
 html[data-theme="professional"] {
-  --gaa-primary:  #005C2E;
-  --gaa-accent:   #C9A84C;
-  --bg-app:       #F4F3F0;
+  --gaa-primary: #005C2E;
+  --gaa-accent:  #C9A84C;
+  --bg-app:      #F4F3F0;
 }
 
 html[data-theme="county"] {
-  --gaa-primary:  var(--county-primary,   #006633);
-  --gaa-accent:   var(--county-secondary, #FFD700);
-  --bg-app:       #f9fafb;
+  --gaa-primary: var(--county-primary,   #006633);
+  --gaa-accent:  var(--county-secondary, #FFD700);
 }
 
-/* ── Dark mode overrides ───────────────────────────────────────────── */
-/*
-   VSCode-inspired dark palette with a slight blue-grey tint:
-     body/page bg  →  #1e1f2a
-     card surface  →  #252636
-     borders       →  #2e3048
-*/
+/* ── Score animations ──────────────────────────────────────────────── */
 
-html.dark body             { background-color: #1e1f2a; color: #e2e4ed; }
+@keyframes score-flash {
+  0%, 100% { color: #f0f0f0; }
+  30%       { color: #e8a020; }
+  60%       { color: #ffffff; }
+}
+
+@keyframes goal-flash {
+  0%   { background-color: transparent; }
+  20%  { background-color: rgba(232, 160, 32, 0.25); }
+  100% { background-color: transparent; }
+}
+
+.animate-score-flash { animation: score-flash 0.6s ease-in-out; }
+.animate-goal-flash  { animation: goal-flash 0.8s ease-out; }
+
+/* ── Dark mode overrides ───────────────────────────────────────────── */
+
+html.dark body             { background-color: #0f0f0f; color: #f0f0f0; }
+html.dark                  { --bg-app: #0f0f0f; }
 
 /* Surfaces */
-html.dark .bg-white        { background-color: #252636; }
-html.dark .bg-gray-50      { background-color: #1e1f2a; }
-html.dark .bg-gray-100     { background-color: #2e3048; }
+html.dark .bg-white        { background-color: #1a1a1a; }
+html.dark .bg-gray-50      { background-color: #0f0f0f; }
+html.dark .bg-gray-100     { background-color: #242424; }
 
 /* Borders */
 html.dark .border-gray-100 { border-color: #2a2b3d; }
-html.dark .border-gray-200 { border-color: #2e3048; }
-html.dark .border-gray-300 { border-color: #3a3d5c; }
+html.dark .border-gray-200 { border-color: #2e2e2e; }
+html.dark .border-gray-300 { border-color: #3a3a3a; }
 
 /* Typography */
-html.dark .text-gaa-dark   { color: #e2e4ed; }
-html.dark .text-gray-900   { color: #e2e4ed; }
-html.dark .text-gray-800   { color: #d4d6e3; }
-html.dark .text-gray-700   { color: #9aa0b9; }
-html.dark .text-gray-600   { color: #7d84a0; }
-html.dark .text-gray-500   { color: #636878; }
-html.dark .text-gray-400   { color: #565f7a; }
-html.dark .text-gray-300   { color: #3d4466; }
+html.dark .text-gaa-dark   { color: #f0f0f0; }
+html.dark .text-gray-900   { color: #f0f0f0; }
+html.dark .text-gray-800   { color: #d4d4d4; }
+html.dark .text-gray-700   { color: #aaaaaa; }
+html.dark .text-gray-600   { color: #888888; }
+html.dark .text-gray-500   { color: #666666; }
+html.dark .text-gray-400   { color: #555555; }
+html.dark .text-gray-300   { color: #444444; }
 
 /* Amber (warning banners) */
-html.dark .bg-amber-50     { background-color: #1f1a0e; }
-html.dark .bg-amber-100    { background-color: #2a1d08; }
+html.dark .bg-amber-50      { background-color: #1f1a0e; }
+html.dark .bg-amber-100     { background-color: #2a1d08; }
 html.dark .border-amber-200 { border-color: #3d2e0a; }
-html.dark .text-amber-800  { color: #fbbf24; }
-html.dark .text-amber-700  { color: #f59e0b; }
+html.dark .text-amber-800   { color: #fbbf24; }
+html.dark .text-amber-700   { color: #f59e0b; }
 
 /* Green banners */
-html.dark .bg-green-50     { background-color: #0d1f13; }
+html.dark .bg-green-50      { background-color: #0d1f13; }
 html.dark .border-green-200 { border-color: #1a3d23; }
 
-/* Blue badges (TV channel) */
-html.dark .bg-blue-50      { background-color: #0f172a; }
-html.dark .text-blue-700   { color: #93c5fd; }
+/* Blue / sign-in banners */
+html.dark .bg-blue-50       { background-color: #0f172a; }
+html.dark .border-blue-100  { border-color: #1e2f4a; }
+html.dark .border-blue-200  { border-color: #1e2f4a; }
+html.dark .text-blue-800    { color: #93c5fd; }
+html.dark .text-blue-700    { color: #60a5fa; }
+html.dark .text-blue-500    { color: #3b82f6; }
+html.dark .text-blue-400    { color: #60a5fa; }
+
+/* Emerald (FT badge) */
+html.dark .bg-emerald-100   { background-color: #0d2b1a; }
+html.dark .text-emerald-700 { color: #34d399; }
 
 /* Form controls */
 html.dark select,
-html.dark input            { background-color: #252636; color: #e2e4ed; border-color: #2e3048; }
+html.dark input             { background-color: #1a1a1a; color: #f0f0f0; border-color: #2e2e2e; }

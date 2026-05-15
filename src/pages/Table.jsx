@@ -11,9 +11,9 @@ function CompetitionStandings({ competition }) {
 
   if (competition.format === 'championship') {
     return (
-      <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 mb-6 text-center">
-        <p className="text-sm text-gray-500 font-medium">Knockout competition — no standings table.</p>
-        <p className="text-xs text-gray-400 mt-1">Results show in match cards above.</p>
+      <div className="bg-gaa-surface border border-gaa-border rounded-xl p-4 mb-6 text-center">
+        <p className="text-sm text-gaa-text-muted font-medium">Knockout competition — no standings table.</p>
+        <p className="text-xs text-gaa-text-muted opacity-60 mt-1">Results show in match cards above.</p>
       </div>
     )
   }
@@ -65,7 +65,7 @@ export default function Table() {
               className={`shrink-0 text-xs font-bold px-3 py-1.5 rounded-full border transition-colors min-h-[36px] ${
                 c.id === activeId
                   ? 'bg-gaa-minor text-white border-gaa-minor'
-                  : 'bg-white text-gray-600 border-gray-300'
+                  : 'bg-gaa-surface text-gaa-text-muted border-gaa-border'
               }`}
             >
               {c.short_name}
@@ -76,7 +76,7 @@ export default function Table() {
 
       {activeComp && (
         <section>
-          <h2 className="text-sm font-black text-gray-900 mb-3">{activeComp.name}</h2>
+          <h2 className="font-barlow text-base font-black text-gaa-text mb-3">{activeComp.name}</h2>
           <CompetitionStandings competition={activeComp} />
         </section>
       )}

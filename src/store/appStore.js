@@ -6,7 +6,7 @@ export const useAppStore = create(
     (set) => ({
       favouriteCounty:      null,
       fontSize:             'medium',
-      darkMode:             false,
+      darkMode:             true,
       theme:                'default',   // 'default' | 'county' | 'professional'
       notificationsEnabled: false,
       homeClubId:           null,

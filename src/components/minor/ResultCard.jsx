@@ -20,11 +20,11 @@ export default function ResultCard({ game }) {
 
   return (
     <article
-      className="flex rounded-2xl mb-2 overflow-hidden shadow-sm border border-purple-100"
-      style={{ backgroundColor: '#F9F7FF' }}
+      className="flex rounded-2xl mb-2 overflow-hidden shadow-sm border border-gaa-border"
+      style={{ backgroundColor: '#1a1a1a' }}
       aria-label={`Result: ${game.home_team} ${game.home_score} ${game.away_team} ${game.away_score}`}
     >
-      <div className="w-2 shrink-0 bg-gaa-minor" aria-hidden="true" />
+      <div className="w-1.5 shrink-0 bg-gaa-minor" aria-hidden="true" />
       <div className="flex-1 p-3">
 
         {/* Competition + FT badge */}
@@ -35,35 +35,29 @@ export default function ResultCard({ game }) {
           </span>
         </div>
 
-        {/* Score row */}
-        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-1">
-
-          {/* Home */}
-          <div className="text-right">
-            <p className={`text-sm leading-tight ${homeWon ? 'font-black text-gray-900' : 'font-medium text-gray-400'}`}>
+        {/* Score rows */}
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between gap-2">
+            <span className={`text-sm truncate leading-tight flex-1 ${homeWon ? 'font-black text-gaa-text' : 'font-medium text-gaa-text-muted'}`}>
               {game.home_team}
-            </p>
-            <p className={`text-2xl tabular-nums leading-tight mt-0.5 ${homeWon ? 'font-black text-gaa-minor' : 'font-bold text-gray-300'}`}>
+            </span>
+            <span className={`font-barlow text-2xl tabular-nums leading-none shrink-0 ${homeWon ? 'font-black text-gaa-amber' : 'font-bold text-gaa-text-muted'}`}>
               {game.home_score}
-            </p>
+            </span>
           </div>
 
-          {/* Dash */}
-          <div className="text-gray-300 font-black text-xl px-2 self-end pb-0.5" aria-hidden="true">–</div>
-
-          {/* Away */}
-          <div className="text-left">
-            <p className={`text-sm leading-tight ${awayWon ? 'font-black text-gray-900' : 'font-medium text-gray-400'}`}>
+          <div className="flex items-center justify-between gap-2">
+            <span className={`text-sm truncate leading-tight flex-1 ${awayWon ? 'font-black text-gaa-text' : 'font-medium text-gaa-text-muted'}`}>
               {game.away_team}
-            </p>
-            <p className={`text-2xl tabular-nums leading-tight mt-0.5 ${awayWon ? 'font-black text-gaa-minor' : 'font-bold text-gray-300'}`}>
+            </span>
+            <span className={`font-barlow text-2xl tabular-nums leading-none shrink-0 ${awayWon ? 'font-black text-gaa-amber' : 'font-bold text-gaa-text-muted'}`}>
               {game.away_score}
-            </p>
+            </span>
           </div>
         </div>
 
         {/* Date + venue */}
-        <div className="flex items-center gap-3 mt-2 text-[10px] text-gray-400">
+        <div className="flex items-center gap-3 mt-2 text-[10px] text-gaa-text-muted">
           <span>{formatDate(game.start_time)}</span>
           {game.venue && (
             <span className="flex items-center gap-0.5 truncate">

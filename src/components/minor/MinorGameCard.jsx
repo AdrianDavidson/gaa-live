@@ -1,34 +1,30 @@
-import { MapPin }   from 'lucide-react'
-import LiveBadge     from './LiveBadge'
+import { useRef, useState, useEffect } from 'react'
+import { MapPin }                       from 'lucide-react'
+import LiveBadge                        from './LiveBadge'
 
-function ScoreRow({ game }) {
+function parseGoals(score) {
+  if (!score) return 0
+  return parseInt(score.split('-')[0], 10) || 0
+}
+
+function AnimatedScore({ score }) {
+  const prevRef = useRef(score)
+  const [cls, setCls] = useState('')
+
+  useEffect(() => {
+    const prev = prevRef.current
+    prevRef.current = score
+    if (!prev || prev === score) return
+    const wasGoal = parseGoals(score) > parseGoals(prev)
+    setCls(wasGoal ? 'animate-goal-flash rounded-md' : 'animate-score-flash')
+    const id = setTimeout(() => setCls(''), 900)
+    return () => clearTimeout(id)
+  }, [score])
+
   return (
-    <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 mt-2">
-      <div className="text-right">
-        {game.home_crest && (
-          <img src={game.home_crest} alt="" className="w-5 h-5 object-contain inline-block mr-1 rounded-sm" aria-hidden="true" />
-        )}
-        <span className="font-bold text-sm text-gray-900">{game.home_team}</span>
-        {game.home_score && (
-          <p className="text-xl font-black tabular-nums text-gaa-minor mt-0.5">{game.home_score}</p>
-        )}
-      </div>
-
-      <div className="text-center text-gray-300 font-black text-lg px-1">
-        {game.home_score ? '–' : <span className="text-xs font-bold text-gray-500">{formatTime(game.start_time)}</span>}
-        {game.period && <p className="text-[10px] font-black text-gaa-minor uppercase mt-0.5">{game.period}</p>}
-      </div>
-
-      <div className="text-left">
-        {game.away_crest && (
-          <img src={game.away_crest} alt="" className="w-5 h-5 object-contain inline-block mr-1 rounded-sm" aria-hidden="true" />
-        )}
-        <span className="font-bold text-sm text-gray-900">{game.away_team}</span>
-        {game.away_score && (
-          <p className="text-xl font-black tabular-nums text-gaa-minor mt-0.5">{game.away_score}</p>
-        )}
-      </div>
-    </div>
+    <span className={`font-barlow text-2xl font-black tabular-nums leading-none shrink-0 text-gaa-text ${cls}`}>
+      {score}
+    </span>
   )
 }
 
@@ -38,19 +34,51 @@ function formatTime(ts) {
 }
 
 export default function MinorGameCard({ game }) {
+  const hasScores = !!(game.home_score || game.away_score)
+
   return (
     <article
-      className="flex rounded-2xl mb-2 overflow-hidden shadow-sm border border-purple-200"
-      style={{ backgroundColor: '#F3EFFE' }}
+      className="flex rounded-2xl mb-2 overflow-hidden shadow-sm border border-gaa-border"
+      style={{ backgroundColor: '#1a1a1a' }}
       aria-label={`${game.home_team} vs ${game.away_team}`}
     >
-      <div className="w-2 shrink-0 bg-gaa-minor" aria-hidden="true" />
+      <div className="w-1.5 shrink-0 bg-gaa-minor" aria-hidden="true" />
       <div className="flex-1 p-3">
-        <LiveBadge period={game.period} />
-        <p className="text-[11px] font-bold text-gaa-minor mt-1 mb-1">{game.competition_short}</p>
-        <ScoreRow game={game} />
+
+        {/* Badge + competition */}
+        <div className="flex items-center justify-between mb-2">
+          <LiveBadge period={game.period} />
+          <span className="text-[10px] font-bold text-gaa-minor">{game.competition_short}</span>
+        </div>
+
+        {/* Score rows */}
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5 min-w-0 flex-1">
+              {game.home_crest && (
+                <img src={game.home_crest} alt="" className="w-4 h-4 object-contain rounded-sm shrink-0" aria-hidden="true" />
+              )}
+              <span className="font-semibold text-sm text-gaa-text truncate">{game.home_team}</span>
+            </div>
+            {hasScores
+              ? <AnimatedScore score={game.home_score} />
+              : <span className="text-xs text-gaa-text-muted shrink-0">{formatTime(game.start_time)}</span>
+            }
+          </div>
+
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5 min-w-0 flex-1">
+              {game.away_crest && (
+                <img src={game.away_crest} alt="" className="w-4 h-4 object-contain rounded-sm shrink-0" aria-hidden="true" />
+              )}
+              <span className="font-semibold text-sm text-gaa-text truncate">{game.away_team}</span>
+            </div>
+            {hasScores && <AnimatedScore score={game.away_score} />}
+          </div>
+        </div>
+
         {game.venue && (
-          <p className="text-[10px] text-gray-400 mt-2 flex items-center gap-1">
+          <p className="text-[10px] text-gaa-text-muted mt-2 flex items-center gap-1">
             <MapPin size={9} aria-hidden="true" />
             {game.venue}
           </p>

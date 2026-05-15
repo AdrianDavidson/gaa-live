@@ -23,10 +23,10 @@ function ClubPickerModal({ clubs, onSelect, onClose }) {
       aria-modal="true"
       aria-label="Pick your club"
     >
-      <div className="bg-white w-full max-w-lg rounded-t-2xl p-4 pb-8">
+      <div className="bg-gaa-surface w-full max-w-lg rounded-t-2xl p-4 pb-8 border-t border-gaa-border">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="font-black text-gray-900">Pick your club</h2>
-          <button onClick={onClose} className="text-gray-400 min-h-[44px] px-2">
+          <h2 className="font-black text-gaa-text">Pick your club</h2>
+          <button onClick={onClose} className="text-gaa-text-muted min-h-[44px] px-2">
             <X size={20} />
           </button>
         </div>
@@ -35,10 +35,10 @@ function ClubPickerModal({ clubs, onSelect, onClose }) {
           placeholder="Search clubs…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-base mb-3 focus:outline-none focus:ring-2 focus:ring-gaa-minor"
+          className="w-full border border-gaa-border rounded-lg px-3 py-2 text-base mb-3 bg-gaa-surface-raised text-gaa-text focus:outline-none focus:ring-2 focus:ring-gaa-minor"
           autoFocus
         />
-        <ul className="max-h-64 overflow-y-auto divide-y divide-gray-100">
+        <ul className="max-h-64 overflow-y-auto divide-y divide-gaa-border">
           {filtered.map((c) => (
             <li key={c.id}>
               <button
@@ -50,15 +50,15 @@ function ClubPickerModal({ clubs, onSelect, onClose }) {
                 )}
                 <div
                   className="w-4 h-4 rounded-full shrink-0"
-                  style={{ background: `linear-gradient(135deg, ${c.primary_colour} 50%, ${c.secondary_colour ?? '#fff'} 50%)` }}
+                  style={{ background: `linear-gradient(135deg, ${c.primary_colour} 50%, ${c.secondary_colour ?? '#888'} 50%)` }}
                   aria-hidden="true"
                 />
-                <span className="font-semibold text-sm text-gray-900">{c.name}</span>
+                <span className="font-semibold text-sm text-gaa-text">{c.name}</span>
               </button>
             </li>
           ))}
           {filtered.length === 0 && (
-            <li className="py-6 text-center text-gray-400 text-sm">No clubs found</li>
+            <li className="py-6 text-center text-gaa-text-muted text-sm">No clubs found</li>
           )}
         </ul>
       </div>

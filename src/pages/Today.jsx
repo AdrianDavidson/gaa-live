@@ -6,11 +6,17 @@ import { SkeletonTodayPage } from '../components/ui/Skeletons'
 import { useGames }          from '../hooks/useGames'
 import { useAppStore }       from '../store/appStore'
 
+const LIVE_GREEN = '#3a7d44'
+
 function SectionHeader({ title, pulse }) {
   return (
-    <h2 className="text-sm font-black text-gray-900 uppercase tracking-wide flex items-center gap-2 mb-3">
+    <h2 className="font-barlow text-base font-black text-gaa-text uppercase tracking-wide flex items-center gap-2 mb-3">
       {pulse && (
-        <span className="w-2 h-2 bg-gaa-minor rounded-full animate-pulse" aria-hidden="true" />
+        <span
+          className="w-2 h-2 rounded-full animate-pulse shrink-0"
+          style={{ backgroundColor: LIVE_GREEN }}
+          aria-hidden="true"
+        />
       )}
       {title}
     </h2>
@@ -25,10 +31,10 @@ export default function Today() {
   const { data: todayGames = [], isLoading }    = useGames({ date: today })
   const { data: tomorrowGames = [] }            = useGames({ date: tomorrow })
 
-  const liveNow   = todayGames.filter((g) => g.period && g.period !== 'FT')
+  const liveNow    = todayGames.filter((g) => g.period && g.period !== 'FT')
   const laterToday = todayGames.filter((g) => !g.period)
 
-  const myClubId  = homeClubId
+  const myClubId   = homeClubId
   const myNextGame =
     todayGames.find((g) => g.home_club?.id === myClubId || g.away_club?.id === myClubId) ??
     tomorrowGames.find((g) => g.home_club?.id === myClubId || g.away_club?.id === myClubId)
@@ -40,10 +46,8 @@ export default function Today() {
       {!isLoading && (
         <div className="space-y-5">
 
-          {/* My club hero */}
           <ClubHeroCard nextGame={myNextGame} />
 
-          {/* Live now */}
           {liveNow.length > 0 && (
             <section aria-labelledby="live-heading">
               <SectionHeader title="Live Now" pulse id="live-heading" />
@@ -51,7 +55,6 @@ export default function Today() {
             </section>
           )}
 
-          {/* Later today */}
           {laterToday.length > 0 && (
             <section aria-labelledby="later-heading">
               <SectionHeader title="Later Today" id="later-heading" />
@@ -59,7 +62,6 @@ export default function Today() {
             </section>
           )}
 
-          {/* Tomorrow */}
           {tomorrowGames.length > 0 && (
             <section aria-labelledby="tomorrow-heading">
               <SectionHeader title="Tomorrow" id="tomorrow-heading" />
@@ -69,8 +71,8 @@ export default function Today() {
 
           {!liveNow.length && !laterToday.length && !tomorrowGames.length && (
             <div className="text-center py-16">
-              <p className="text-gray-400 text-sm">No games today or tomorrow.</p>
-              <p className="text-gray-300 text-xs mt-1">Check Fixtures for upcoming games.</p>
+              <p className="text-gaa-text-muted text-sm">No games today or tomorrow.</p>
+              <p className="text-gaa-text-muted text-xs mt-1 opacity-60">Check Fixtures for upcoming games.</p>
             </div>
           )}
 

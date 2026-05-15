@@ -7,26 +7,26 @@ export default function Header() {
 
   return (
     <header
-      className="text-white px-4 py-3 flex items-center justify-between sticky top-0 z-10"
-      style={{ backgroundColor: theme.primary }}
+      className="bg-gaa-surface text-gaa-text px-4 py-3 flex items-center justify-between sticky top-0 z-10 border-b border-gaa-border"
+      style={theme.primary ? { borderBottomColor: theme.primary } : undefined}
     >
       <div className="flex items-center gap-2">
         {theme.crest && (
           <img
             src={theme.crest}
             alt=""
-            className="w-7 h-7 object-contain rounded-full bg-white/20 p-0.5"
+            className="w-7 h-7 object-contain rounded-full bg-white/10 p-0.5"
             aria-hidden="true"
           />
         )}
-        <span className="text-2xl font-black tracking-tight">Cork Minor</span>
+        <span className="font-barlow text-2xl font-black tracking-tight text-gaa-text">Cork Minor</span>
       </div>
       <div className="flex items-center gap-3">
-        <span className="text-xs font-medium opacity-80">Hurling</span>
+        <span className="text-xs font-semibold text-gaa-text-muted">Hurling</span>
         {isSignedIn
           ? <UserButton afterSignOutUrl="/" />
           : <SignInButton mode="modal">
-              <button className="text-xs font-bold bg-white/20 rounded-lg px-3 py-1.5 hover:bg-white/30 transition-colors">
+              <button className="text-xs font-bold bg-gaa-surface-raised text-gaa-text rounded-lg px-3 py-1.5 border border-gaa-border hover:border-gaa-minor transition-colors">
                 Sign in
               </button>
             </SignInButton>
