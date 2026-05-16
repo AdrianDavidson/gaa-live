@@ -8,13 +8,13 @@ function formatDateTime(ts) {
     d.toLocaleTimeString('en-IE', { hour: '2-digit', minute: '2-digit' })
 }
 
-export default function FixtureCard({ game }) {
+export default function FixtureCard({ game, dim = false }) {
   return (
     <article
-      className="flex bg-gaa-surface border border-gaa-border rounded-2xl mb-2 overflow-hidden shadow-sm"
+      className={`flex bg-gaa-surface border border-gaa-border rounded-2xl mb-2 overflow-hidden shadow-sm transition-opacity ${dim ? 'opacity-50' : ''}`}
       aria-label={`${game.home_team} vs ${game.away_team}`}
     >
-      <div className="w-1.5 shrink-0 bg-gaa-minor" aria-hidden="true" />
+      <div className={`w-1.5 shrink-0 ${dim ? 'bg-gaa-border' : 'bg-gaa-minor'}`} aria-hidden="true" />
       <div className="flex-1 p-3">
         <p className="text-[11px] font-bold text-gaa-minor mb-1">{game.competition_short}</p>
         <div className="flex items-center justify-between gap-2">

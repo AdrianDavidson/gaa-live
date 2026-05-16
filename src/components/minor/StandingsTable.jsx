@@ -32,7 +32,7 @@ export default function StandingsTable({ rows }) {
         }}
       >
         <span className="text-[10px] font-bold text-gaa-text-muted text-center">#</span>
-        <span className="text-[10px] font-bold text-gaa-text-muted">Club</span>
+        <span className="text-[10px] font-bold text-gaa-text-muted">Club · Diff</span>
         <span className="text-[10px] font-bold text-gaa-text-muted text-center">P</span>
         <span className="text-[10px] font-bold text-gaa-text-muted text-center">W</span>
         <span className="text-[10px] font-bold text-gaa-text-muted text-center">L</span>
