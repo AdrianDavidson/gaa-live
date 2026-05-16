@@ -37,7 +37,7 @@ export default async function handler(req, res) {
   const auth = await requireAuth(req, res, ['pro', 'admin'])
   if (!auth) return
 
-  const { gameId, homeScore, awayScore, period } = req.body
+  const { gameId, homeScore, awayScore, period, cards } = req.body
   if (!gameId || !homeScore || !awayScore || !period) {
     return res.status(400).json({ error: 'gameId, homeScore, awayScore, period required' })
   }
@@ -72,12 +72,12 @@ export default async function handler(req, res) {
 
     const { error: insertErr } = await supabase
       .from('score_updates')
-      .insert({ game_id: gameId, home_score: homeScore, away_score: awayScore, period, submitted_by: pro.id })
+      .insert({ game_id: gameId, home_score: homeScore, away_score: awayScore, period, cards: cards ?? {}, submitted_by: pro.id })
     if (insertErr) return res.status(500).json({ error: insertErr.message })
   } else {
     const { error: insertErr } = await supabase
       .from('score_updates')
-      .insert({ game_id: gameId, home_score: homeScore, away_score: awayScore, period })
+      .insert({ game_id: gameId, home_score: homeScore, away_score: awayScore, period, cards: cards ?? {} })
     if (insertErr) return res.status(500).json({ error: insertErr.message })
   }
 

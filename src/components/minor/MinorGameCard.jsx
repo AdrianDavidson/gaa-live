@@ -33,8 +33,35 @@ function formatTime(ts) {
   return new Date(ts).toLocaleTimeString('en-IE', { hour: '2-digit', minute: '2-digit' })
 }
 
+function CardPips({ cards }) {
+  if (!cards) return null
+  const { yellow = 0, red = 0, black = 0 } = cards
+  if (!yellow && !red && !black) return null
+  return (
+    <div className="flex items-center gap-0.5 ml-1.5 shrink-0" aria-label="Cards">
+      {yellow > 0 && (
+        <span className="text-[9px] font-black leading-none px-1 py-0.5 rounded" style={{ backgroundColor: '#fde047', color: '#713f12' }}>
+          {yellow}Y
+        </span>
+      )}
+      {red > 0 && (
+        <span className="text-[9px] font-black leading-none px-1 py-0.5 rounded bg-red-700 text-white">
+          {red}R
+        </span>
+      )}
+      {black > 0 && (
+        <span className="text-[9px] font-black leading-none px-1 py-0.5 rounded bg-gray-700 text-white">
+          {black}B
+        </span>
+      )}
+    </div>
+  )
+}
+
 export default function MinorGameCard({ game }) {
-  const hasScores = !!(game.home_score || game.away_score)
+  const hasScores  = !!(game.home_score || game.away_score)
+  const homeCards  = game.cards?.home ?? null
+  const awayCards  = game.cards?.away ?? null
 
   return (
     <article
@@ -59,6 +86,7 @@ export default function MinorGameCard({ game }) {
                 <img src={game.home_crest} alt="" className="w-4 h-4 object-contain rounded-sm shrink-0" aria-hidden="true" />
               )}
               <span className="font-semibold text-sm text-gaa-text truncate">{game.home_team}</span>
+              <CardPips cards={homeCards} />
             </div>
             {hasScores
               ? <AnimatedScore score={game.home_score} />
@@ -72,6 +100,7 @@ export default function MinorGameCard({ game }) {
                 <img src={game.away_crest} alt="" className="w-4 h-4 object-contain rounded-sm shrink-0" aria-hidden="true" />
               )}
               <span className="font-semibold text-sm text-gaa-text truncate">{game.away_team}</span>
+              <CardPips cards={awayCards} />
             </div>
             {hasScores && <AnimatedScore score={game.away_score} />}
           </div>

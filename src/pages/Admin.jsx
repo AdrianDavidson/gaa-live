@@ -99,6 +99,140 @@ function DeleteBtn({ onConfirm }) {
   )
 }
 
+// ─── CSV import ───────────────────────────────────────────────────────────────
+
+function CsvImportSection({ clubs, comps, getToken, onDone }) {
+  const [csv,       setCsv]       = useState('')
+  const [rows,      setRows]      = useState(null)
+  const [importing, setImporting] = useState(false)
+  const [result,    setResult]    = useState(null)
+
+  function parse() {
+    const lines = csv.trim().split('\n').map(l => l.replace(/\r$/, '').trim()).filter(Boolean)
+    if (lines.length < 2) { setRows([]); setResult(null); return }
+    const hdr    = lines[0].split(',').map(h => h.trim().toLowerCase())
+    const parsed = lines.slice(1).map(line => {
+      const vals = line.split(',').map(v => v.trim())
+      const raw  = Object.fromEntries(hdr.map((h, i) => [h, vals[i] ?? '']))
+      const homeClub = clubs.find(c => c.name.toLowerCase() === (raw.home_club ?? '').toLowerCase())
+      const awayClub = clubs.find(c => c.name.toLowerCase() === (raw.away_club ?? '').toLowerCase())
+      const comp     = comps.find(c =>
+        c.name.toLowerCase()        === (raw.competition_name  ?? '').toLowerCase() ||
+        c.short_name?.toLowerCase() === (raw.competition_short ?? '').toLowerCase()
+      )
+      const issues = [
+        !raw.date       && 'Missing date',
+        !raw.start_time && 'Missing start_time',
+        !homeClub && `Club not found: "${raw.home_club}"`,
+        !awayClub && `Club not found: "${raw.away_club}"`,
+        !comp     && `Competition not found: "${raw.competition_name || raw.competition_short}"`,
+      ].filter(Boolean)
+      return { raw, homeClub, awayClub, comp, issues }
+    })
+    setRows(parsed)
+    setResult(null)
+  }
+
+  async function importAll() {
+    const valid = (rows ?? []).filter(r => r.issues.length === 0)
+    if (!valid.length || importing) return
+    setImporting(true)
+    const token = await getToken()
+    let ok = 0, fail = 0
+    for (const r of valid) {
+      const res = await fetch('/api/admin/games', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          homeClubId:    r.homeClub.id,
+          awayClubId:    r.awayClub.id,
+          competitionId: r.comp.id,
+          venue:         r.raw.venue ?? '',
+          startTime:     `${r.raw.date}T${r.raw.start_time}:00`,
+          assignedProId: '',
+        }),
+      })
+      res.ok ? ok++ : fail++
+    }
+    setImporting(false)
+    setResult({ ok, fail })
+    if (ok > 0) { setCsv(''); setRows(null); onDone?.() }
+  }
+
+  const validCount = (rows ?? []).filter(r => r.issues.length === 0).length
+  const badCount   = (rows ?? []).filter(r => r.issues.length  > 0).length
+
+  return (
+    <div className="bg-gaa-surface border border-gaa-border rounded-2xl p-4 mb-5">
+      <h3 className="font-barlow text-lg font-black text-gaa-text mb-1">Import CSV</h3>
+      <p className="text-[10px] font-mono text-gaa-text-muted mb-3 break-all leading-relaxed">
+        date, start_time, home_club, away_club, competition_name, competition_short, venue
+      </p>
+      <textarea
+        value={csv}
+        onChange={e => { setCsv(e.target.value); setRows(null); setResult(null) }}
+        placeholder="Paste CSV rows here…"
+        rows={5}
+        className="w-full bg-gaa-surface-raised border border-gaa-border rounded-xl px-3 py-2.5 text-xs text-gaa-text placeholder:text-gaa-text-muted font-mono focus:outline-none focus:ring-2 focus:ring-gaa-minor mb-2 resize-none"
+      />
+      <button
+        onClick={parse}
+        disabled={!csv.trim()}
+        className="w-full py-2.5 rounded-xl bg-gaa-surface-raised border border-gaa-border text-sm font-bold text-gaa-text disabled:opacity-30 mb-3"
+      >
+        Preview
+      </button>
+
+      {rows !== null && rows.length === 0 && (
+        <p className="text-xs text-gaa-text-muted text-center py-2">No data rows found — check the header row is included.</p>
+      )}
+
+      {rows !== null && rows.length > 0 && (
+        <div className="space-y-2 mb-3">
+          {rows.map((r, i) => (
+            <div key={i} className={`rounded-xl p-3 border text-xs ${
+              r.issues.length
+                ? 'border-red-700/50 bg-red-900/10'
+                : 'border-emerald-700/50 bg-emerald-900/10'
+            }`}>
+              <p className="font-bold text-gaa-text mb-0.5">
+                {r.raw.home_club || '?'} vs {r.raw.away_club || '?'}
+                <span className="font-normal text-gaa-text-muted ml-1">
+                  · {r.raw.date} {r.raw.start_time}
+                </span>
+              </p>
+              {r.issues.length > 0
+                ? r.issues.map((e, j) => <p key={j} className="text-red-400">{e}</p>)
+                : <p className="text-emerald-400">{r.comp.name}</p>
+              }
+            </div>
+          ))}
+
+          {validCount > 0 && (
+            <button
+              onClick={importAll}
+              disabled={importing}
+              className="w-full py-3 rounded-xl bg-gaa-minor text-white font-black text-sm disabled:opacity-50"
+            >
+              {importing
+                ? 'Importing…'
+                : `Import ${validCount} fixture${validCount !== 1 ? 's' : ''}${badCount > 0 ? ` (${badCount} skipped)` : ''}`
+              }
+            </button>
+          )}
+        </div>
+      )}
+
+      {result && (
+        <p className={`text-sm text-center font-bold ${result.ok > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+          {result.ok > 0 && `✓ Imported ${result.ok} fixture${result.ok !== 1 ? 's' : ''}`}
+          {result.fail > 0 && ` · ${result.fail} failed`}
+        </p>
+      )}
+    </div>
+  )
+}
+
 // ─── Games tab ────────────────────────────────────────────────────────────────
 
 const BLANK_GAME = { homeClub: null, awayClub: null, competition: null, venue: '', startTime: '', pro: null }
@@ -215,6 +349,8 @@ function GamesTab() {
           </p>
         )}
       </form>
+
+      <CsvImportSection clubs={clubs} comps={comps} getToken={getToken} onDone={loadGames} />
 
       {/* Upcoming list */}
       <h3 className="font-barlow text-base font-black text-gaa-text mb-2">

@@ -199,6 +199,7 @@ export default function Submit() {
           homeScore: `${s.hg}-${String(s.hp).padStart(2, '0')}`,
           awayScore: `${s.ag}-${String(s.ap).padStart(2, '0')}`,
           period:    periodRef.current,
+          cards:     cardsRef.current,
         }),
       })
       if (!res.ok) throw new Error()
@@ -225,10 +226,11 @@ export default function Submit() {
     scheduleSubmit()
   }
 
-  // Card change — snapshots to history but does NOT trigger a save (cards are local-only for now)
+  // Card change — snapshots to history and schedules a save (cards are now persisted)
   function pushCard(updater) {
     setHistory((h) => [...h.slice(-9), { score: scoreRef.current, cards: cardsRef.current }])
     setCards(updater)
+    scheduleSubmit()
   }
 
   function undo() {

@@ -153,14 +153,16 @@ export default async function handler(req, res) {
     const { data: scores } = ids.length
       ? await supabase
           .from('score_updates')
-          .select('game_id, home_score, away_score, period, created_at')
+          .select('game_id, home_score, away_score, period, cards, created_at, pro:pros!submitted_by(club_id)')
           .in('game_id', ids)
           .order('created_at', { ascending: false })
       : { data: [] }
 
-    const latestByGame = {}
+    // Group all updates per game (newest first, already ordered by DB)
+    const updatesByGame = {}
     for (const s of scores ?? []) {
-      if (!latestByGame[s.game_id]) latestByGame[s.game_id] = s
+      if (!updatesByGame[s.game_id]) updatesByGame[s.game_id] = []
+      updatesByGame[s.game_id].push(s)
     }
 
     const games = (rows ?? []).map((g) => ({
@@ -181,10 +183,7 @@ export default async function handler(req, res) {
       away_colour:        g.away_club?.primary_colour,
       away_secondary:     g.away_club?.secondary_colour,
       away_crest:         g.away_club?.crest_url,
-      home_score:         latestByGame[g.id]?.home_score ?? null,
-      away_score:         latestByGame[g.id]?.away_score ?? null,
-      period:             latestByGame[g.id]?.period     ?? null,
-      updated_at:         latestByGame[g.id]?.created_at ?? null,
+      ...resolveScore(g.home_club?.id, g.away_club?.id, updatesByGame[g.id] ?? []),
     }))
 
     try { await redis.set(cacheKey, games, { ex: date === dateTo ? 120 : 300 }) } catch (_) {}
@@ -199,4 +198,32 @@ function nextDay(dateStr) {
   const d = new Date(`${dateStr}T00:00:00Z`)
   d.setUTCDate(d.getUTCDate() + 1)
   return d.toISOString().split('T')[0]
+}
+
+// Home PRO is authoritative for home_score; away PRO for away_score.
+// Falls back to the latest unattributed update for either side.
+function resolveScore(homeClubId, awayClubId, updates) {
+  if (!updates.length) return { home_score: null, away_score: null, period: null, cards: null, updated_at: null }
+
+  // Pick best source for each side: prefer the PRO whose club matches, newest first
+  const homeUpdate = updates.find((u) => u.pro?.club_id && u.pro.club_id === homeClubId)
+                  ?? updates[0]
+  const awayUpdate = updates.find((u) => u.pro?.club_id && u.pro.club_id === awayClubId)
+                  ?? updates[0]
+
+  // Period and cards come from the overall latest update
+  const latest = updates[0]
+
+  // Merge cards: home cards from home PRO's latest, away cards from away PRO's latest
+  const homeCards = homeUpdate.cards?.home ?? latest.cards?.home ?? null
+  const awayCards = awayUpdate.cards?.away ?? latest.cards?.away ?? null
+  const cards     = (homeCards || awayCards) ? { home: homeCards, away: awayCards } : latest.cards
+
+  return {
+    home_score:  homeUpdate.home_score,
+    away_score:  awayUpdate.away_score,
+    period:      latest.period,
+    cards,
+    updated_at:  latest.created_at,
+  }
 }
