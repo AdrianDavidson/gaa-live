@@ -1,9 +1,8 @@
-import { useState }              from 'react'
+import { useState, useEffect }  from 'react'
 import { Link }                  from 'react-router-dom'
 import { useAuth, UserButton, SignInButton, SignUpButton } from '@clerk/react'
-import { X, Plus, ChevronRight, CloudUpload } from 'lucide-react'
+import { X, Plus, ChevronRight, Download, Bell, BellOff } from 'lucide-react'
 import PageWrapper                from '../components/layout/PageWrapper'
-import NotificationToggle         from '../components/notifications/NotificationToggle'
 import { useAppStore }            from '../store/appStore'
 import { useClubs }               from '../hooks/useClubs'
 import { useClubTheme }           from '../hooks/useClubTheme'
@@ -18,12 +17,16 @@ function ClubPickerModal({ clubs, onSelect, onClose }) {
   )
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/50"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/60"
       role="dialog"
       aria-modal="true"
       aria-label="Pick your club"
+      onClick={onClose}
     >
-      <div className="bg-gaa-surface w-full max-w-lg rounded-t-2xl p-4 pb-8 border-t border-gaa-border">
+      <div
+        className="bg-gaa-surface w-full max-w-lg rounded-t-2xl p-4 pb-10 border-t border-gaa-border"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex items-center justify-between mb-3">
           <h2 className="font-black text-gaa-text">Pick your club</h2>
           <button onClick={onClose} className="text-gaa-text-muted min-h-[44px] px-2">
@@ -35,7 +38,7 @@ function ClubPickerModal({ clubs, onSelect, onClose }) {
           placeholder="Search clubs…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full border border-gaa-border rounded-lg px-3 py-2 text-base mb-3 bg-gaa-surface-raised text-gaa-text focus:outline-none focus:ring-2 focus:ring-gaa-minor"
+          className="w-full border border-gaa-border rounded-xl px-3 py-2.5 text-sm mb-3 bg-gaa-surface-raised text-gaa-text placeholder:text-gaa-text-muted focus:outline-none focus:ring-2 focus:ring-gaa-minor"
           autoFocus
         />
         <ul className="max-h-64 overflow-y-auto divide-y divide-gaa-border">
@@ -45,9 +48,6 @@ function ClubPickerModal({ clubs, onSelect, onClose }) {
                 onClick={() => { onSelect(c); onClose() }}
                 className="w-full text-left flex items-center gap-3 py-3 px-1 min-h-[48px]"
               >
-                {c.crest_url && (
-                  <img src={c.crest_url} alt="" className="w-6 h-6 object-contain rounded-sm" aria-hidden="true" />
-                )}
                 <div
                   className="w-4 h-4 rounded-full shrink-0"
                   style={{ background: `linear-gradient(135deg, ${c.primary_colour} 50%, ${c.secondary_colour ?? '#888'} 50%)` }}
@@ -69,14 +69,34 @@ function ClubPickerModal({ clubs, onSelect, onClose }) {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function Settings() {
-  const [showClubPicker, setShowClubPicker]       = useState(false)
-  const [showFollowPicker, setShowFollowPicker]   = useState(false)
+  const [showClubPicker,   setShowClubPicker]   = useState(false)
+  const [showFollowPicker, setShowFollowPicker] = useState(false)
+  const [installPrompt,    setInstallPrompt]    = useState(null)
+  const [isInstalled,      setIsInstalled]      = useState(false)
 
   const { isSignedIn, getToken } = useAuth()
   const { setHomeClub }          = useAppStore()
   const { data: clubs = [] }     = useClubs()
   const theme                    = useClubTheme()
   const { followedClubs, followClub, unfollowClub } = useClubNotifications()
+
+  // PWA install prompt
+  useEffect(() => {
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      setIsInstalled(true)
+      return
+    }
+    const handler = (e) => { e.preventDefault(); setInstallPrompt(e) }
+    window.addEventListener('beforeinstallprompt', handler)
+    return () => window.removeEventListener('beforeinstallprompt', handler)
+  }, [])
+
+  async function installApp() {
+    if (!installPrompt) return
+    installPrompt.prompt()
+    const { outcome } = await installPrompt.userChoice
+    if (outcome === 'accepted') setInstallPrompt(null)
+  }
 
   async function saveHomeClub(club) {
     setHomeClub(club.id)
@@ -90,121 +110,170 @@ export default function Settings() {
     }
   }
 
+  // Map club name → full club object for swatches
+  const clubByName = Object.fromEntries(clubs.map((c) => [c.name, c]))
+
+  const Row = ({ children }) => (
+    <div className="bg-gaa-surface border border-gaa-border rounded-2xl overflow-hidden mb-4">
+      {children}
+    </div>
+  )
+
+  const SectionLabel = ({ children }) => (
+    <p className="text-[11px] font-bold text-gaa-text-muted uppercase tracking-wider mb-2 px-1">{children}</p>
+  )
+
   return (
     <PageWrapper title="Settings">
 
-      {/* ── Club identity ───────────────────────────────────────────────── */}
-      <section className="mb-6" aria-labelledby="club-heading">
-        <h2 id="club-heading" className="text-base font-bold text-gray-700 mb-3">Your Club</h2>
-
-        <div
-          className="flex items-center gap-3 p-3 rounded-xl border"
-          style={theme.name
-            ? { background: `${theme.primary}11`, borderColor: `${theme.primary}33` }
-            : { background: '#f9fafb', borderColor: '#e5e7eb' }
-          }
-        >
-          {theme.crest && (
-            <img src={theme.crest} alt="" className="w-10 h-10 object-contain rounded-full" aria-hidden="true" />
-          )}
-          {!theme.crest && (
-            <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center shrink-0">
-              <span className="text-gray-400 text-xs">?</span>
-            </div>
-          )}
-          <div className="flex-1">
-            <p className="font-bold text-sm text-gray-900">{theme.name ?? 'No club selected'}</p>
-            <p className="text-xs text-gray-500">Cork Minor Hurling Fan</p>
+      {/* ── Your Club ───────────────────────────────────────────────────── */}
+      <SectionLabel>Your Club</SectionLabel>
+      <Row>
+        <div className="flex items-center gap-3 p-4">
+          <div
+            className="w-10 h-10 rounded-full shrink-0 border-2"
+            style={theme.primary
+              ? { background: `linear-gradient(135deg, ${theme.primary} 50%, ${theme.secondary ?? '#888'} 50%)`, borderColor: `${theme.primary}55` }
+              : { background: '#333', borderColor: '#444' }
+            }
+            aria-hidden="true"
+          />
+          <div className="flex-1 min-w-0">
+            <p className="font-bold text-sm text-gaa-text truncate">{theme.name ?? 'No club selected'}</p>
+            <p className="text-xs text-gaa-text-muted">Cork Minor Hurling</p>
           </div>
           <button
             onClick={() => setShowClubPicker(true)}
-            className="text-xs font-bold text-gaa-minor border border-gaa-minor rounded-lg px-3 py-2 min-h-[40px]"
+            className="text-xs font-bold text-gaa-minor border border-gaa-minor rounded-lg px-3 py-2 min-h-[40px] shrink-0"
           >
-            {theme.name ? 'Change' : 'Choose club'}
+            {theme.name ? 'Change' : 'Choose'}
           </button>
         </div>
+      </Row>
 
-        {isSignedIn
-          ? <div className="mt-3 flex items-center gap-2"><UserButton /><span className="text-sm text-gray-500">Account</span></div>
-          : (
-            <div className="mt-4 rounded-xl bg-blue-50 border border-blue-100 p-4 flex gap-3 items-start">
-              <CloudUpload size={20} className="text-blue-500 shrink-0 mt-0.5" aria-hidden="true" />
-              <div className="flex-1">
-                <p className="text-sm font-bold text-blue-800 mb-0.5">Save your club across devices</p>
-                <p className="text-xs text-blue-500 mb-3">Create a free account and your club selection syncs everywhere you use the app.</p>
-                <div className="flex gap-2">
-                  <SignUpButton mode="modal">
-                    <button className="bg-blue-600 text-white text-xs font-bold px-3 py-2 rounded-lg min-h-[36px]">
-                      Create account
-                    </button>
-                  </SignUpButton>
-                  <SignInButton mode="modal">
-                    <button className="text-blue-600 text-xs font-bold px-3 py-2 rounded-lg border border-blue-200 min-h-[36px]">
-                      Sign in
-                    </button>
-                  </SignInButton>
-                </div>
-              </div>
+      {/* ── Account ─────────────────────────────────────────────────────── */}
+      <SectionLabel>Account</SectionLabel>
+      <Row>
+        {isSignedIn ? (
+          <div className="flex items-center gap-3 p-4">
+            <UserButton />
+            <div>
+              <p className="text-sm font-semibold text-gaa-text">Signed in</p>
+              <p className="text-xs text-gaa-text-muted">Your club syncs across devices</p>
             </div>
-          )
-        }
-      </section>
-
-      {/* ── Club notifications ───────────────────────────────────────────── */}
-      <section className="mb-6" aria-labelledby="club-notif-heading">
-        <h2 id="club-notif-heading" className="text-base font-bold text-gray-700 mb-1">Club Notifications</h2>
-        <p className="text-xs text-gray-400 mb-3">Get notified on every score update</p>
-
-        {followedClubs.length > 0 && (
-          <ul className="space-y-2 mb-3">
-            {followedClubs.map((club) => (
-              <li key={club} className="flex items-center justify-between bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
-                <span className="text-sm font-semibold text-gray-900">{club}</span>
-                <button
-                  onClick={() => unfollowClub(club)}
-                  className="text-gray-400 hover:text-red-500 min-h-[36px] px-1"
-                  aria-label={`Unfollow ${club}`}
-                >
-                  <X size={16} />
+          </div>
+        ) : (
+          <div className="p-4">
+            <p className="text-sm font-bold text-gaa-text mb-1">Save your club across devices</p>
+            <p className="text-xs text-gaa-text-muted mb-4">Create a free account and your club selection syncs everywhere you use the app.</p>
+            <div className="flex gap-2">
+              <SignUpButton mode="modal">
+                <button className="bg-gaa-minor text-white text-xs font-bold px-4 py-2.5 rounded-xl min-h-[40px]">
+                  Create account
                 </button>
-              </li>
-            ))}
-          </ul>
+              </SignUpButton>
+              <SignInButton mode="modal">
+                <button className="text-gaa-text text-xs font-bold px-4 py-2.5 rounded-xl border border-gaa-border min-h-[40px]">
+                  Sign in
+                </button>
+              </SignInButton>
+            </div>
+          </div>
         )}
+      </Row>
 
-        <button
-          onClick={() => setShowFollowPicker(true)}
-          className="flex items-center gap-1.5 text-xs font-bold text-gaa-minor min-h-[44px]"
-        >
-          <Plus size={14} />
-          Follow another club
-        </button>
-      </section>
+      {/* ── Club Notifications ───────────────────────────────────────────── */}
+      <SectionLabel>Club Notifications</SectionLabel>
+      <Row>
+        <div className="p-4">
+          <p className="text-xs text-gaa-text-muted mb-3">Get a push notification on every score update for the clubs you follow.</p>
 
-      {/* ── Push notifications (existing) ───────────────────────────────── */}
-      <section className="mb-6" aria-labelledby="notif-heading">
-        <h2 id="notif-heading" className="text-base font-bold text-gray-700 mb-2">
-          Senior Match Alerts
-        </h2>
-        <NotificationToggle />
-      </section>
+          {followedClubs.length > 0 && (
+            <ul className="space-y-2 mb-3">
+              {followedClubs.map((clubName) => {
+                const club = clubByName[clubName]
+                return (
+                  <li key={clubName} className="flex items-center gap-3 bg-gaa-surface-raised border border-gaa-border rounded-xl px-3 py-2.5">
+                    <div
+                      className="w-4 h-4 rounded-full shrink-0"
+                      style={club
+                        ? { background: `linear-gradient(135deg, ${club.primary_colour} 50%, ${club.secondary_colour ?? '#888'} 50%)` }
+                        : { background: '#555' }
+                      }
+                      aria-hidden="true"
+                    />
+                    <span className="text-sm font-semibold text-gaa-text flex-1">{clubName}</span>
+                    <button
+                      onClick={() => unfollowClub(clubName)}
+                      className="text-gaa-text-muted hover:text-red-400 min-h-[36px] px-1 transition-colors"
+                      aria-label={`Unfollow ${clubName}`}
+                    >
+                      <X size={15} />
+                    </button>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
 
-      {/* ── Senior results link ──────────────────────────────────────────── */}
-      <section className="mb-6">
+          {followedClubs.length === 0 && (
+            <p className="text-xs text-gaa-text-muted italic mb-3">No clubs followed yet.</p>
+          )}
+
+          <button
+            onClick={() => setShowFollowPicker(true)}
+            className="flex items-center gap-1.5 text-xs font-bold text-gaa-minor min-h-[44px]"
+          >
+            <Plus size={14} />
+            Follow a club
+          </button>
+        </div>
+      </Row>
+
+      {/* ── Install App ─────────────────────────────────────────────────── */}
+      {!isInstalled && installPrompt && (
+        <>
+          <SectionLabel>App</SectionLabel>
+          <Row>
+            <button
+              onClick={installApp}
+              className="w-full flex items-center gap-3 p-4 text-left"
+            >
+              <div className="w-9 h-9 rounded-xl bg-gaa-minor flex items-center justify-center shrink-0">
+                <Download size={18} className="text-white" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-bold text-gaa-text">Add to Home Screen</p>
+                <p className="text-xs text-gaa-text-muted">Install for quick access, works offline</p>
+              </div>
+              <ChevronRight size={16} className="text-gaa-text-muted shrink-0" />
+            </button>
+          </Row>
+        </>
+      )}
+
+      {/* ── More ────────────────────────────────────────────────────────── */}
+      <SectionLabel>More</SectionLabel>
+      <Row>
         <Link
           to="/senior"
-          className="flex items-center justify-between text-sm text-gray-500 hover:text-gray-700 min-h-[44px]"
+          className="flex items-center justify-between p-4 text-sm text-gaa-text min-h-[52px]"
         >
-          Senior county results
-          <ChevronRight size={16} className="text-gray-400" />
+          <span className="font-semibold">Senior county results</span>
+          <ChevronRight size={16} className="text-gaa-text-muted" />
         </Link>
-      </section>
+      </Row>
+
+      {/* ── Footer ──────────────────────────────────────────────────────── */}
+      <p className="text-center text-[11px] text-gaa-text-muted mt-6 mb-2 opacity-50">
+        Cork Minor Hurling · Built for the fans
+      </p>
 
       {/* Modals */}
       {showClubPicker && (
         <ClubPickerModal
           clubs={clubs}
-          onSelect={(c) => saveHomeClub(c)}
+          onSelect={saveHomeClub}
           onClose={() => setShowClubPicker(false)}
         />
       )}
@@ -215,7 +284,6 @@ export default function Settings() {
           onClose={() => setShowFollowPicker(false)}
         />
       )}
-
     </PageWrapper>
   )
 }
