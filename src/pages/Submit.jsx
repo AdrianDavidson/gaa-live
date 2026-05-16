@@ -374,12 +374,14 @@ export default function Submit() {
           <button
             onClick={undo}
             disabled={!history.length}
-            className="flex items-center gap-1.5 text-xs font-bold text-gaa-text-muted disabled:opacity-30 min-h-[44px] transition-opacity mb-6"
+            className="w-full flex items-center justify-center gap-2 h-13 py-3.5 rounded-xl border font-bold text-sm transition-all active:opacity-70 mb-6 disabled:opacity-30 bg-gaa-surface-raised border-gaa-border text-gaa-text"
             aria-label="Undo last change"
           >
-            <Undo2 size={14} aria-hidden="true" />
+            <Undo2 size={18} aria-hidden="true" />
             Undo last change
-            {history.length > 0 && <span className="opacity-50">({history.length})</span>}
+            {history.length > 0 && (
+              <span className="text-xs text-gaa-text-muted font-normal">({history.length})</span>
+            )}
           </button>
 
           {/* Live scorecard */}
