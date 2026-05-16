@@ -29,72 +29,85 @@ function Toast({ toast }) {
   )
 }
 
-function ScoreButtons({ label, goals, points, onGoal, onPoint, onMinus }) {
+// One row: type label + count on the left, − in the middle, big + button on the right
+function ScoreRow({ type, value, addColor, badge, onAdd, onMinus }) {
+  return (
+    <div className="flex items-center gap-2 mb-2">
+      <div className="w-16 shrink-0">
+        <p className="text-[10px] font-bold text-gaa-text-muted uppercase tracking-wider">{type}</p>
+        <p className="font-barlow text-2xl font-black text-gaa-text tabular-nums leading-none">{value}</p>
+      </div>
+      <button
+        onClick={onMinus}
+        disabled={value === 0}
+        className="w-12 h-12 rounded-xl bg-gaa-surface-raised border border-gaa-border text-gaa-text text-2xl font-black shrink-0 disabled:opacity-20 transition-opacity active:opacity-60"
+        aria-label={`Remove ${type}`}
+      >
+        −
+      </button>
+      <button
+        onClick={onAdd}
+        className="flex-1 h-12 rounded-xl font-black text-white flex flex-col items-center justify-center gap-0.5 transition-opacity active:opacity-70"
+        style={{ backgroundColor: addColor }}
+        aria-label={`Add ${type}`}
+      >
+        <span className="text-[10px] uppercase font-bold opacity-80">+ {type}</span>
+        <span className="text-sm leading-none">{badge}</span>
+      </button>
+    </div>
+  )
+}
+
+function ScoreButtons({ label, goals, points, onGoal, onPoint, onMinusGoal, onMinusPoint }) {
   return (
     <div className="mb-5">
-      <div className="flex items-center justify-between mb-2">
+      <div className="flex items-center justify-between mb-3">
         <p className="text-xs font-bold text-gaa-text-muted uppercase tracking-wider truncate mr-2">{label}</p>
         <span className="font-barlow text-3xl font-black text-gaa-text tabular-nums shrink-0">
           {goals}-{String(points).padStart(2, '0')}
         </span>
       </div>
-      <div className="flex gap-2">
-        <button
-          onClick={onGoal}
-          className="flex-1 h-14 rounded-xl font-black text-white flex flex-col items-center justify-center gap-0.5 transition-opacity active:opacity-70"
-          style={{ backgroundColor: '#e8a020' }}
-          aria-label={`Goal for ${label}`}
-        >
-          <span className="text-[10px] opacity-75 font-bold uppercase">Goal</span>
-          <span className="text-base leading-none">+3</span>
-        </button>
-        <button
-          onClick={onPoint}
-          className="flex-1 h-14 rounded-xl bg-gaa-minor font-black text-white flex flex-col items-center justify-center gap-0.5 transition-opacity active:opacity-70"
-          aria-label={`Point for ${label}`}
-        >
-          <span className="text-[10px] opacity-75 font-bold uppercase">Point</span>
-          <span className="text-base leading-none">+1</span>
-        </button>
-        <button
-          onClick={onMinus}
-          className="w-14 h-14 rounded-xl bg-gaa-surface-raised text-gaa-text-muted text-2xl font-black border border-gaa-border transition-opacity active:opacity-70"
-          aria-label={`Decrease ${label} score`}
-        >
-          −
-        </button>
-      </div>
+      <ScoreRow type="Goal"  value={goals}  addColor="#e8a020" badge="+3" onAdd={onGoal}  onMinus={onMinusGoal}  />
+      <ScoreRow type="Point" value={points} addColor="#7C3AED" badge="+1" onAdd={onPoint} onMinus={onMinusPoint} />
     </div>
   )
 }
 
-function CardButtons({ label, yellow, red, onYellow, onRed }) {
+// One row per card type: type label + count, − button, + button
+function CardRow({ type, count, bgColor, textColor, onAdd, onMinus }) {
   return (
-    <div className="mb-1">
-      <div className="flex items-center justify-between mb-2">
-        <p className="text-xs font-bold text-gaa-text-muted uppercase tracking-wider truncate">{label}</p>
-        <div className="flex gap-2 text-xs">
-          {yellow > 0 && <span className="font-bold text-yellow-400">🟨 ×{yellow}</span>}
-          {red > 0 && <span className="font-bold text-red-400">🟥 ×{red}</span>}
-        </div>
+    <div className="flex items-center gap-2 mb-2">
+      <div className="w-16 shrink-0">
+        <p className="text-[10px] font-bold text-gaa-text-muted uppercase tracking-wider">{type}</p>
+        <p className="font-barlow text-2xl font-black text-gaa-text tabular-nums leading-none">{count}</p>
       </div>
-      <div className="flex gap-2">
-        <button
-          onClick={onYellow}
-          className="flex-1 h-12 rounded-xl font-black text-gray-900 text-sm flex items-center justify-center gap-1.5 transition-opacity active:opacity-70"
-          style={{ backgroundColor: '#fde047' }}
-          aria-label={`Yellow card for ${label}`}
-        >
-          + Yellow
-        </button>
-        <button
-          onClick={onRed}
-          className="flex-1 h-12 rounded-xl bg-red-700 font-black text-white text-sm flex items-center justify-center gap-1.5 transition-opacity active:opacity-70"
-          aria-label={`Red card for ${label}`}
-        >
-          + Red
-        </button>
-      </div>
+      <button
+        onClick={onMinus}
+        disabled={count === 0}
+        className="w-12 h-12 rounded-xl bg-gaa-surface-raised border border-gaa-border text-gaa-text text-2xl font-black shrink-0 disabled:opacity-20 transition-opacity active:opacity-60"
+        aria-label={`Remove ${type} card`}
+      >
+        −
+      </button>
+      <button
+        onClick={onAdd}
+        className="flex-1 h-12 rounded-xl font-black text-sm transition-opacity active:opacity-70 flex items-center justify-center"
+        style={{ backgroundColor: bgColor, color: textColor }}
+        aria-label={`Add ${type} card`}
+      >
+        + {type}
+      </button>
+    </div>
+  )
+}
+
+function CardButtons({ label, yellow, red, black, onYellow, onRed, onBlack, onMinusYellow, onMinusRed, onMinusBlack }) {
+  return (
+    <div className="mb-4">
+      <p className="text-xs font-bold text-gaa-text-muted uppercase tracking-wider mb-3 truncate">{label}</p>
+      <CardRow type="Yellow" count={yellow} bgColor="#fde047" textColor="#713f12" onAdd={onYellow} onMinus={onMinusYellow} />
+      <CardRow type="Red"    count={red}    bgColor="#b91c1c" textColor="#fff"     onAdd={onRed}    onMinus={onMinusRed}    />
+      <CardRow type="Black"  count={black}  bgColor="#1f2937" textColor="#fff"     onAdd={onBlack}  onMinus={onMinusBlack}  />
     </div>
   )
 }
@@ -106,7 +119,10 @@ export default function Submit() {
   const [game,      setGame]      = useState(null)
   const [loading,   setLoading]   = useState(true)
   const [score,     setScore]     = useState({ hg: 0, hp: 0, ag: 0, ap: 0 })
-  const [cards,     setCards]     = useState({ home: { yellow: 0, red: 0 }, away: { yellow: 0, red: 0 } })
+  const [cards,     setCards]     = useState({
+    home: { yellow: 0, red: 0, black: 0 },
+    away: { yellow: 0, red: 0, black: 0 },
+  })
   const [history,   setHistory]   = useState([])
   const [period,    setPeriod]    = useState('Q1')
   const [ftConfirm, setFtConfirm] = useState(false)
@@ -304,11 +320,8 @@ export default function Submit() {
             goals={score.hg} points={score.hp}
             onGoal={() => pushScore((s) => ({ ...s, hg: s.hg + 1 }))}
             onPoint={() => pushScore((s) => ({ ...s, hp: s.hp + 1 }))}
-            onMinus={() => pushScore((s) => {
-              if (s.hp > 0) return { ...s, hp: s.hp - 1 }
-              if (s.hg > 0) return { ...s, hg: s.hg - 1 }
-              return s
-            })}
+            onMinusGoal={() => pushScore((s) => s.hg > 0 ? { ...s, hg: s.hg - 1 } : s)}
+            onMinusPoint={() => pushScore((s) => s.hp > 0 ? { ...s, hp: s.hp - 1 } : s)}
           />
 
           <div className="border-t border-gaa-border my-4" />
@@ -318,11 +331,8 @@ export default function Submit() {
             goals={score.ag} points={score.ap}
             onGoal={() => pushScore((s) => ({ ...s, ag: s.ag + 1 }))}
             onPoint={() => pushScore((s) => ({ ...s, ap: s.ap + 1 }))}
-            onMinus={() => pushScore((s) => {
-              if (s.ap > 0) return { ...s, ap: s.ap - 1 }
-              if (s.ag > 0) return { ...s, ag: s.ag - 1 }
-              return s
-            })}
+            onMinusGoal={() => pushScore((s) => s.ag > 0 ? { ...s, ag: s.ag - 1 } : s)}
+            onMinusPoint={() => pushScore((s) => s.ap > 0 ? { ...s, ap: s.ap - 1 } : s)}
           />
 
           {/* Period */}
@@ -355,18 +365,24 @@ export default function Submit() {
             <p className="text-xs font-bold text-gaa-text-muted uppercase tracking-wider mb-3">Cards</p>
             <CardButtons
               label={game.home_team}
-              yellow={cards.home.yellow}
-              red={cards.home.red}
+              yellow={cards.home.yellow} red={cards.home.red} black={cards.home.black}
               onYellow={() => pushCard((c) => ({ ...c, home: { ...c.home, yellow: c.home.yellow + 1 } }))}
               onRed={() => pushCard((c) => ({ ...c, home: { ...c.home, red: c.home.red + 1 } }))}
+              onBlack={() => pushCard((c) => ({ ...c, home: { ...c.home, black: c.home.black + 1 } }))}
+              onMinusYellow={() => pushCard((c) => ({ ...c, home: { ...c.home, yellow: Math.max(0, c.home.yellow - 1) } }))}
+              onMinusRed={() => pushCard((c) => ({ ...c, home: { ...c.home, red: Math.max(0, c.home.red - 1) } }))}
+              onMinusBlack={() => pushCard((c) => ({ ...c, home: { ...c.home, black: Math.max(0, c.home.black - 1) } }))}
             />
-            <div className="mt-3" />
+            <div className="mt-4" />
             <CardButtons
               label={game.away_team}
-              yellow={cards.away.yellow}
-              red={cards.away.red}
+              yellow={cards.away.yellow} red={cards.away.red} black={cards.away.black}
               onYellow={() => pushCard((c) => ({ ...c, away: { ...c.away, yellow: c.away.yellow + 1 } }))}
               onRed={() => pushCard((c) => ({ ...c, away: { ...c.away, red: c.away.red + 1 } }))}
+              onBlack={() => pushCard((c) => ({ ...c, away: { ...c.away, black: c.away.black + 1 } }))}
+              onMinusYellow={() => pushCard((c) => ({ ...c, away: { ...c.away, yellow: Math.max(0, c.away.yellow - 1) } }))}
+              onMinusRed={() => pushCard((c) => ({ ...c, away: { ...c.away, red: Math.max(0, c.away.red - 1) } }))}
+              onMinusBlack={() => pushCard((c) => ({ ...c, away: { ...c.away, black: Math.max(0, c.away.black - 1) } }))}
             />
           </div>
 
@@ -374,7 +390,7 @@ export default function Submit() {
           <button
             onClick={undo}
             disabled={!history.length}
-            className="w-full flex items-center justify-center gap-2 h-13 py-3.5 rounded-xl border font-bold text-sm transition-all active:opacity-70 mb-6 disabled:opacity-30 bg-gaa-surface-raised border-gaa-border text-gaa-text"
+            className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl border font-bold text-sm transition-all active:opacity-70 mb-6 disabled:opacity-30 bg-gaa-surface-raised border-gaa-border text-gaa-text"
             aria-label="Undo last change"
           >
             <Undo2 size={18} aria-hidden="true" />
@@ -394,10 +410,11 @@ export default function Submit() {
                 <p className="font-barlow text-4xl font-black text-gaa-text tabular-nums leading-none">
                   {score.hg}-{String(score.hp).padStart(2, '0')}
                 </p>
-                {(cards.home.yellow > 0 || cards.home.red > 0) && (
-                  <div className="flex justify-center items-center gap-2 mt-2 text-xs font-bold">
+                {(cards.home.yellow > 0 || cards.home.red > 0 || cards.home.black > 0) && (
+                  <div className="flex justify-center items-center gap-2 mt-2 text-xs font-bold flex-wrap">
                     {cards.home.yellow > 0 && <span className="text-yellow-400">🟨 {cards.home.yellow}</span>}
-                    {cards.home.red > 0 && <span className="text-red-400">🟥 {cards.home.red}</span>}
+                    {cards.home.red > 0    && <span className="text-red-400">🟥 {cards.home.red}</span>}
+                    {cards.home.black > 0  && <span className="text-gray-300">⬛ {cards.home.black}</span>}
                   </div>
                 )}
               </div>
@@ -415,10 +432,11 @@ export default function Submit() {
                 <p className="font-barlow text-4xl font-black text-gaa-text tabular-nums leading-none">
                   {score.ag}-{String(score.ap).padStart(2, '0')}
                 </p>
-                {(cards.away.yellow > 0 || cards.away.red > 0) && (
-                  <div className="flex justify-center items-center gap-2 mt-2 text-xs font-bold">
+                {(cards.away.yellow > 0 || cards.away.red > 0 || cards.away.black > 0) && (
+                  <div className="flex justify-center items-center gap-2 mt-2 text-xs font-bold flex-wrap">
                     {cards.away.yellow > 0 && <span className="text-yellow-400">🟨 {cards.away.yellow}</span>}
-                    {cards.away.red > 0 && <span className="text-red-400">🟥 {cards.away.red}</span>}
+                    {cards.away.red > 0    && <span className="text-red-400">🟥 {cards.away.red}</span>}
+                    {cards.away.black > 0  && <span className="text-gray-300">⬛ {cards.away.black}</span>}
                   </div>
                 )}
               </div>
