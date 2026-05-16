@@ -44,7 +44,7 @@ export default async function handler(req, res) {
 
   const { data: game, error: gameErr } = await supabase
     .from('games')
-    .select('id, competition_id, home_club:clubs!home_club_id(name), away_club:clubs!away_club_id(name), assigned_pro_id')
+    .select('id, competition_id, home_club_id, away_club_id, home_club:clubs!home_club_id(name), away_club:clubs!away_club_id(name), assigned_pro_id')
     .eq('id', gameId)
     .single()
 
@@ -53,18 +53,26 @@ export default async function handler(req, res) {
   if (auth.role === 'pro') {
     const { data: pro } = await supabase
       .from('pros')
-      .select('id')
+      .select('id, club_id')
       .eq('clerk_id', auth.userId)
       .single()
-    if (!pro || game.assigned_pro_id !== pro.id) {
-      return res.status(403).json({ error: 'Not assigned to this game' })
+
+    if (!pro) return res.status(403).json({ error: 'PRO not registered' })
+
+    // TODO: Remove club-based check and revert to assigned_pro_id only once all
+    // fixtures have a dedicated PRO assigned. For now any PRO whose club is in
+    // the game can submit both teams' scores.
+    const isAssigned  = game.assigned_pro_id === pro.id
+    const isClubInGame = pro.club_id &&
+      (game.home_club_id === pro.club_id || game.away_club_id === pro.club_id)
+
+    if (!isAssigned && !isClubInGame) {
+      return res.status(403).json({ error: 'Not authorised for this game' })
     }
 
-    const { data: scoreRow, error: insertErr } = await supabase
+    const { error: insertErr } = await supabase
       .from('score_updates')
       .insert({ game_id: gameId, home_score: homeScore, away_score: awayScore, period, submitted_by: pro.id })
-      .select()
-      .single()
     if (insertErr) return res.status(500).json({ error: insertErr.message })
   } else {
     const { error: insertErr } = await supabase

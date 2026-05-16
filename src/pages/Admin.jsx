@@ -4,8 +4,6 @@ import { X, ChevronDown }       from 'lucide-react'
 import { supabase }             from '../lib/supabase'
 import { compPillLabel }        from '../utils/formatters'
 
-const PERIODS = ['Q1', 'HT', 'Q2', 'FT']
-
 // ─── Reusable searchable bottom-sheet picker ─────────────────────────────────
 
 function SearchModal({ title, items, onSelect, onClose }) {
@@ -98,215 +96,6 @@ function DeleteBtn({ onConfirm }) {
     <button onClick={() => setArmed(true)} className="text-gaa-text-muted font-bold text-xs min-h-[36px] px-2">
       Delete
     </button>
-  )
-}
-
-// ─── Inline score editor ─────────────────────────────────────────────────────
-
-function parseScore(str) {
-  if (!str) return { g: 0, p: 0 }
-  const [g = 0, p = 0] = str.split('-').map(Number)
-  return { g: Number(g) || 0, p: Number(p) || 0 }
-}
-
-function InlineScoreEditor({ game, onSaved }) {
-  const { getToken } = useAuth()
-  const hi           = parseScore(game.home_score)
-  const ai           = parseScore(game.away_score)
-
-  const [score,  setScore]  = useState({ hg: hi.g, hp: hi.p, ag: ai.g, ap: ai.p })
-  const [period, setPeriod] = useState(game.period ?? 'Q1')
-  const [saving, setSaving] = useState(false)
-  const [flash,  setFlash]  = useState(null) // 'ok' | 'err'
-
-  async function save() {
-    if (saving) return
-    setSaving(true)
-    try {
-      const token = await getToken()
-      const res   = await fetch('/api/submit-score', {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({
-          gameId:    game.id,
-          homeScore: `${score.hg}-${String(score.hp).padStart(2, '0')}`,
-          awayScore: `${score.ag}-${String(score.ap).padStart(2, '0')}`,
-          period,
-        }),
-      })
-      setFlash(res.ok ? 'ok' : 'err')
-      if (res.ok) onSaved?.()
-    } catch {
-      setFlash('err')
-    } finally {
-      setSaving(false)
-      setTimeout(() => setFlash(null), 2500)
-    }
-  }
-
-  function ScoreRow({ label, goals, points, onGoal, onPoint, onMinus }) {
-    return (
-      <div className="mb-3">
-        <div className="flex items-center justify-between mb-1.5">
-          <span className="text-xs font-bold text-gaa-text-muted truncate mr-3">{label}</span>
-          <span className="font-barlow text-xl font-black text-gaa-text tabular-nums shrink-0">
-            {goals}-{String(points).padStart(2, '0')}
-          </span>
-        </div>
-        <div className="flex gap-2">
-          <button type="button" onClick={onGoal}
-            className="flex-1 h-12 rounded-xl font-black text-white text-xs flex flex-col items-center justify-center gap-0.5 active:opacity-70"
-            style={{ backgroundColor: '#e8a020' }}>
-            <span className="text-[9px] opacity-70 uppercase">Goal</span>
-            <span>+3</span>
-          </button>
-          <button type="button" onClick={onPoint}
-            className="flex-1 h-12 rounded-xl bg-gaa-minor font-black text-white text-xs flex flex-col items-center justify-center gap-0.5 active:opacity-70">
-            <span className="text-[9px] opacity-70 uppercase">Point</span>
-            <span>+1</span>
-          </button>
-          <button type="button" onClick={onMinus}
-            className="w-12 h-12 rounded-xl bg-gaa-surface-raised border border-gaa-border text-gaa-text-muted text-xl font-black active:opacity-70">
-            −
-          </button>
-        </div>
-      </div>
-    )
-  }
-
-  return (
-    <div className="mt-3 pt-3 border-t border-gaa-border">
-      <ScoreRow
-        label={game.home_team}
-        goals={score.hg} points={score.hp}
-        onGoal={() => setScore((s) => ({ ...s, hg: s.hg + 1 }))}
-        onPoint={() => setScore((s) => ({ ...s, hp: s.hp + 1 }))}
-        onMinus={() => setScore((s) => {
-          if (s.hp > 0) return { ...s, hp: s.hp - 1 }
-          if (s.hg > 0) return { ...s, hg: s.hg - 1 }
-          return s
-        })}
-      />
-      <ScoreRow
-        label={game.away_team}
-        goals={score.ag} points={score.ap}
-        onGoal={() => setScore((s) => ({ ...s, ag: s.ag + 1 }))}
-        onPoint={() => setScore((s) => ({ ...s, ap: s.ap + 1 }))}
-        onMinus={() => setScore((s) => {
-          if (s.ap > 0) return { ...s, ap: s.ap - 1 }
-          if (s.ag > 0) return { ...s, ag: s.ag - 1 }
-          return s
-        })}
-      />
-
-      {/* Period */}
-      <div className="flex gap-1.5 mb-3">
-        {PERIODS.map((p) => (
-          <button key={p} type="button" onClick={() => setPeriod(p)}
-            className={`flex-1 py-2 rounded-xl text-xs font-black border transition-colors ${
-              period === p
-                ? 'bg-gaa-minor text-white border-gaa-minor'
-                : 'bg-gaa-surface-raised text-gaa-text-muted border-gaa-border'
-            }`}
-          >
-            {p}
-          </button>
-        ))}
-      </div>
-
-      <button type="button" onClick={save} disabled={saving}
-        className={`w-full py-3 rounded-xl font-black text-sm transition-colors ${
-          flash === 'ok'  ? 'bg-emerald-700 text-white' :
-          flash === 'err' ? 'bg-red-800 text-white' :
-                            'bg-gaa-minor text-white disabled:opacity-50'
-        }`}
-      >
-        {saving ? 'Saving…' : flash === 'ok' ? '✓ Saved' : flash === 'err' ? 'Failed — retry' : 'Save Score'}
-      </button>
-    </div>
-  )
-}
-
-// ─── Live tab ─────────────────────────────────────────────────────────────────
-
-function LiveTab() {
-  const [games,    setGames]    = useState([])
-  const [expanded, setExpanded] = useState(null)
-
-  function loadGames() {
-    const today = new Date().toISOString().split('T')[0]
-    fetch(`/api/games?date=${today}`)
-      .then((r) => r.json())
-      .then((d) => setGames(Array.isArray(d) ? d : []))
-  }
-
-  useEffect(() => {
-    loadGames()
-    const ch = supabase
-      .channel('admin-live')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'score_updates' }, loadGames)
-      .subscribe()
-    return () => { supabase.removeChannel(ch) }
-  }, [])
-
-  function proStatus(updatedAt) {
-    if (!updatedAt) return { label: 'No update', cls: 'text-gaa-text-muted' }
-    const mins = (Date.now() - new Date(updatedAt)) / 60_000
-    if (mins < 20) return { label: 'Active',  cls: 'text-emerald-400' }
-    if (mins < 45) return { label: 'Quiet',   cls: 'text-gaa-amber' }
-    return             { label: 'Silent',  cls: 'text-red-400' }
-  }
-
-  if (!games.length) return (
-    <p className="text-gaa-text-muted text-sm text-center py-10">No games scheduled for today.</p>
-  )
-
-  return (
-    <div className="space-y-2">
-      {games.map((g) => {
-        const st   = proStatus(g.updated_at)
-        const isEx = expanded === g.id
-        return (
-          <div key={g.id} className="bg-gaa-surface border border-gaa-border rounded-2xl p-3">
-            {/* Competition + PRO status */}
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] font-bold text-gaa-minor">
-                {compPillLabel(g.competition_name, g.competition_short)}
-              </span>
-              <span className={`text-[10px] font-bold ${st.cls}`}>● {st.label}</span>
-            </div>
-
-            {/* Scoreline */}
-            <div className="flex items-center justify-between gap-2 mb-2">
-              <span className="font-bold text-sm text-gaa-text truncate">{g.home_team}</span>
-              <span className="font-barlow text-2xl font-black text-gaa-text tabular-nums shrink-0">
-                {g.home_score ?? '—'} – {g.away_score ?? '—'}
-              </span>
-              <span className="font-bold text-sm text-gaa-text truncate text-right">{g.away_team}</span>
-            </div>
-
-            {/* Period + Update button */}
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] text-gaa-text-muted">
-                {g.period ?? 'Not started'}
-              </span>
-              <button
-                onClick={() => setExpanded(isEx ? null : g.id)}
-                className={`text-xs font-bold min-h-[32px] px-2 transition-colors ${
-                  isEx ? 'text-gaa-text-muted' : 'text-gaa-minor'
-                }`}
-              >
-                {isEx ? '▲ Close' : '▼ Update Score'}
-              </button>
-            </div>
-
-            {isEx && (
-              <InlineScoreEditor game={g} onSaved={loadGames} />
-            )}
-          </div>
-        )
-      })}
-    </div>
   )
 }
 
@@ -585,10 +374,10 @@ function PROsTab() {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-const TABS = ['Live', 'Games', 'PROs']
+const TABS = ['Fixtures', 'PROs']
 
 export default function Admin() {
-  const [activeTab, setActiveTab] = useState('Live')
+  const [activeTab, setActiveTab] = useState('Fixtures')
 
   return (
     <div className="min-h-screen bg-gaa-bg p-4 max-w-lg mx-auto">
@@ -613,9 +402,8 @@ export default function Admin() {
         ))}
       </div>
 
-      {activeTab === 'Live'  && <LiveTab />}
-      {activeTab === 'Games' && <GamesTab />}
-      {activeTab === 'PROs'  && <PROsTab />}
+      {activeTab === 'Fixtures' && <GamesTab />}
+      {activeTab === 'PROs'     && <PROsTab />}
     </div>
   )
 }

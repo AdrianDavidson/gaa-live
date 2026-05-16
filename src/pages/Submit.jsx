@@ -1,16 +1,23 @@
 import { useState, useEffect, useRef } from 'react'
 import { useAuth }                      from '@clerk/react'
+import { Link }                         from 'react-router-dom'
 import { Undo2 }                        from 'lucide-react'
+import { useAppStore }                  from '../store/appStore'
 
 const PERIODS = ['Q1', 'HT', 'Q2', 'FT']
 
+function parseScore(str) {
+  if (!str) return { g: 0, p: 0 }
+  const [g = 0, p = 0] = str.split('-').map(Number)
+  return { g: Number(g) || 0, p: Number(p) || 0 }
+}
+
 function Toast({ toast }) {
   if (!toast) return null
-  const isSuccess = toast.type === 'success'
   return (
     <div
       className={`fixed top-4 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-xl text-sm font-bold shadow-lg pointer-events-none ${
-        isSuccess
+        toast.type === 'success'
           ? 'bg-emerald-900 text-emerald-200 border border-emerald-700'
           : 'bg-red-900 text-red-200 border border-red-700'
       }`}
@@ -26,8 +33,8 @@ function ScoreButtons({ label, goals, points, onGoal, onPoint, onMinus }) {
   return (
     <div className="mb-5">
       <div className="flex items-center justify-between mb-2">
-        <p className="text-xs font-bold text-gaa-text-muted uppercase tracking-wider">{label}</p>
-        <span className="font-barlow text-3xl font-black text-gaa-text tabular-nums">
+        <p className="text-xs font-bold text-gaa-text-muted uppercase tracking-wider truncate mr-2">{label}</p>
+        <span className="font-barlow text-3xl font-black text-gaa-text tabular-nums shrink-0">
           {goals}-{String(points).padStart(2, '0')}
         </span>
       </div>
@@ -61,55 +68,99 @@ function ScoreButtons({ label, goals, points, onGoal, onPoint, onMinus }) {
   )
 }
 
-export default function Submit() {
-  const { getToken } = useAuth()
+function CardButtons({ label, yellow, red, onYellow, onRed }) {
+  return (
+    <div className="mb-1">
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-xs font-bold text-gaa-text-muted uppercase tracking-wider truncate">{label}</p>
+        <div className="flex gap-2 text-xs">
+          {yellow > 0 && <span className="font-bold text-yellow-400">🟨 ×{yellow}</span>}
+          {red > 0 && <span className="font-bold text-red-400">🟥 ×{red}</span>}
+        </div>
+      </div>
+      <div className="flex gap-2">
+        <button
+          onClick={onYellow}
+          className="flex-1 h-12 rounded-xl font-black text-gray-900 text-sm flex items-center justify-center gap-1.5 transition-opacity active:opacity-70"
+          style={{ backgroundColor: '#fde047' }}
+          aria-label={`Yellow card for ${label}`}
+        >
+          + Yellow
+        </button>
+        <button
+          onClick={onRed}
+          className="flex-1 h-12 rounded-xl bg-red-700 font-black text-white text-sm flex items-center justify-center gap-1.5 transition-opacity active:opacity-70"
+          aria-label={`Red card for ${label}`}
+        >
+          + Red
+        </button>
+      </div>
+    </div>
+  )
+}
 
-  const [game, setGame]           = useState(null)
-  const [loading, setLoading]     = useState(true)
-  const [score, setScore]         = useState({ hg: 0, hp: 0, ag: 0, ap: 0 })
-  const [history, setHistory]     = useState([])
-  const [period, setPeriod]       = useState('Q1')
+export default function Submit() {
+  const { getToken }   = useAuth()
+  const homeClubId     = useAppStore((s) => s.homeClubId)
+
+  const [game,      setGame]      = useState(null)
+  const [loading,   setLoading]   = useState(true)
+  const [score,     setScore]     = useState({ hg: 0, hp: 0, ag: 0, ap: 0 })
+  const [cards,     setCards]     = useState({ home: { yellow: 0, red: 0 }, away: { yellow: 0, red: 0 } })
+  const [history,   setHistory]   = useState([])
+  const [period,    setPeriod]    = useState('Q1')
   const [ftConfirm, setFtConfirm] = useState(false)
-  const [toast, setToast]         = useState(null)
-  const [saving, setSaving]       = useState(false)
+  const [toast,     setToast]     = useState(null)
+  const [saving,    setSaving]    = useState(false)
   const [lastSaved, setLastSaved] = useState(null)
 
-  // Refs so async callbacks always read the latest values
-  const scoreRef        = useRef(score)
-  const periodRef       = useRef('Q1')
-  const gameRef         = useRef(null)
-  const doSubmitRef     = useRef(null)
-  const submitTimer     = useRef(null)
-  const ftConfirmTimer  = useRef(null)
-  const toastTimer      = useRef(null)
+  const scoreRef       = useRef(score)
+  const cardsRef       = useRef(cards)
+  const periodRef      = useRef('Q1')
+  const gameRef        = useRef(null)
+  const doSubmitRef    = useRef(null)
+  const submitTimer    = useRef(null)
+  const ftConfirmTimer = useRef(null)
+  const toastTimer     = useRef(null)
 
   useEffect(() => { scoreRef.current = score },  [score])
+  useEffect(() => { cardsRef.current = cards },  [cards])
   useEffect(() => { periodRef.current = period }, [period])
-  useEffect(() => { gameRef.current = game },     [game])
+  useEffect(() => { gameRef.current = game },    [game])
 
   useEffect(() => {
+    if (!homeClubId) { setLoading(false); return }
+
     async function loadGame() {
       try {
-        const token = await getToken()
         const today = new Date().toISOString().split('T')[0]
-        const res   = await fetch(`/api/games?date=${today}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        })
+        const res   = await fetch(`/api/games?date=${today}`)
         const games = await res.json()
-        if (Array.isArray(games) && games.length) setGame(games[0])
+        const match = Array.isArray(games)
+          ? games.find((g) => g.home_club?.id === homeClubId || g.away_club?.id === homeClubId)
+          : null
+
+        if (match) {
+          setGame(match)
+          const hs  = parseScore(match.home_score)
+          const as_ = parseScore(match.away_score)
+          setScore({ hg: hs.g, hp: hs.p, ag: as_.g, ap: as_.p })
+          if (match.period) setPeriod(match.period)
+        }
       } catch {
         showToast('Could not load your game', 'error')
       } finally {
         setLoading(false)
       }
     }
+
     loadGame()
     return () => {
       clearTimeout(submitTimer.current)
       clearTimeout(ftConfirmTimer.current)
       clearTimeout(toastTimer.current)
     }
-  }, [getToken])
+  }, [homeClubId])
 
   function showToast(msg, type = 'success') {
     clearTimeout(toastTimer.current)
@@ -123,8 +174,8 @@ export default function Submit() {
     setSaving(true)
     try {
       const token = await getToken()
-      const s = scoreRef.current
-      const res = await fetch('/api/submit-score', {
+      const s     = scoreRef.current
+      const res   = await fetch('/api/submit-score', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
@@ -136,7 +187,7 @@ export default function Submit() {
       })
       if (!res.ok) throw new Error()
       setLastSaved(new Date())
-      showToast('Saved ✓', 'success')
+      showToast('Saved ✓')
     } catch {
       showToast('Failed to save — try again', 'error')
     } finally {
@@ -144,8 +195,6 @@ export default function Submit() {
     }
   }
 
-  // Keep the ref pointing to the latest doSubmit so the debounce timer
-  // always calls the current function (avoids stale closure)
   doSubmitRef.current = doSubmit
 
   function scheduleSubmit(delay = 1200) {
@@ -153,17 +202,25 @@ export default function Submit() {
     submitTimer.current = setTimeout(() => doSubmitRef.current?.(), delay)
   }
 
+  // Score change — snapshots current state to history and schedules a save
   function pushScore(updater) {
-    setHistory((h) => [...h.slice(-4), scoreRef.current])
+    setHistory((h) => [...h.slice(-9), { score: scoreRef.current, cards: cardsRef.current }])
     setScore(updater)
     scheduleSubmit()
+  }
+
+  // Card change — snapshots to history but does NOT trigger a save (cards are local-only for now)
+  function pushCard(updater) {
+    setHistory((h) => [...h.slice(-9), { score: scoreRef.current, cards: cardsRef.current }])
+    setCards(updater)
   }
 
   function undo() {
     if (!history.length) return
     const prev = history[history.length - 1]
     setHistory((h) => h.slice(0, -1))
-    setScore(prev)
+    setScore(prev.score)
+    setCards(prev.cards)
     scheduleSubmit()
   }
 
@@ -180,71 +237,58 @@ export default function Submit() {
     scheduleSubmit(300)
   }
 
-  function addGoal(team) {
-    pushScore((s) => team === 'home' ? { ...s, hg: s.hg + 1 } : { ...s, ag: s.ag + 1 })
-  }
-
-  function addPoint(team) {
-    pushScore((s) => team === 'home' ? { ...s, hp: s.hp + 1 } : { ...s, ap: s.ap + 1 })
-  }
-
-  function minus(team) {
-    pushScore((s) => {
-      const c = { ...s }
-      if (team === 'home') {
-        if (c.hp > 0) c.hp--; else if (c.hg > 0) c.hg--
-      } else {
-        if (c.ap > 0) c.ap--; else if (c.ag > 0) c.ag--
-      }
-      return c
-    })
-  }
-
   const fmtTime = (d) => d?.toLocaleTimeString('en-IE', { hour: '2-digit', minute: '2-digit' })
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gaa-bg p-4 max-w-sm mx-auto space-y-4 animate-pulse">
+        <div className="h-8 bg-gaa-surface rounded-xl w-40" />
+        <div className="h-16 bg-gaa-surface rounded-xl" />
+        <div className="h-14 bg-gaa-surface rounded-xl" />
+        <div className="h-14 bg-gaa-surface rounded-xl" />
+      </div>
+    )
+  }
+
   return (
-    <div className="min-h-screen bg-gaa-bg p-4 max-w-sm mx-auto">
+    <div className="min-h-screen bg-gaa-bg p-4 max-w-sm mx-auto pb-10">
       <Toast toast={toast} />
 
-      {/* Header */}
+      {/* Page header */}
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="font-barlow text-2xl font-black text-gaa-text">Score Entry</h1>
           {game && <p className="text-xs text-gaa-text-muted mt-0.5">{game.competition_short}</p>}
         </div>
         <div className="flex items-center gap-3">
-          {saving && (
-            <span className="text-[10px] text-gaa-amber animate-pulse font-bold">Saving…</span>
-          )}
+          {saving && <span className="text-[10px] text-gaa-amber animate-pulse font-bold">Saving…</span>}
           {lastSaved && !saving && (
-            <span className="text-[10px] text-gaa-text-muted">
-              Saved {fmtTime(lastSaved)}
-            </span>
+            <span className="text-[10px] text-gaa-text-muted">Saved {fmtTime(lastSaved)}</span>
           )}
-          <a href="/" className="text-xs font-bold text-gaa-text-muted hover:text-gaa-text transition-colors">
+          <Link to="/" className="text-xs font-bold text-gaa-text-muted hover:text-gaa-text transition-colors">
             ← Back
-          </a>
+          </Link>
         </div>
       </div>
 
-      {/* Loading */}
-      {loading && (
-        <div className="space-y-4 animate-pulse">
-          <div className="h-16 bg-gaa-surface rounded-xl" />
-          <div className="h-14 bg-gaa-surface rounded-xl" />
-          <div className="h-14 bg-gaa-surface rounded-xl" />
-        </div>
-      )}
-
-      {/* No game */}
-      {!loading && !game && (
+      {/* No home club selected */}
+      {!homeClubId && (
         <div className="bg-gaa-surface border border-gaa-border rounded-xl p-4 text-sm text-gaa-text-muted">
-          No game assigned for today. Contact the county board.
+          Set your home club in{' '}
+          <Link to="/settings" className="text-gaa-minor font-bold">Settings</Link>
+          {' '}first, then come back here.
         </div>
       )}
 
-      {/* Main form */}
-      {!loading && game && (
+      {/* Home club set but no game today */}
+      {homeClubId && !game && (
+        <div className="bg-gaa-surface border border-gaa-border rounded-xl p-4 text-sm text-gaa-text-muted">
+          No game scheduled today for your club. Contact the county board if this is unexpected.
+        </div>
+      )}
+
+      {/* Main score entry */}
+      {game && (
         <>
           {/* Game info */}
           <div className="bg-gaa-surface border border-gaa-border rounded-xl p-3 mb-5">
@@ -253,12 +297,18 @@ export default function Submit() {
             {game.venue && <p className="text-xs text-gaa-text-muted mt-0.5">{game.venue}</p>}
           </div>
 
+          {/* Score buttons — both teams */}
+          {/* TODO: Remove away-team entry once per-game PRO assignment is enforced for all fixtures. */}
           <ScoreButtons
             label={game.home_team}
             goals={score.hg} points={score.hp}
-            onGoal={() => addGoal('home')}
-            onPoint={() => addPoint('home')}
-            onMinus={() => minus('home')}
+            onGoal={() => pushScore((s) => ({ ...s, hg: s.hg + 1 }))}
+            onPoint={() => pushScore((s) => ({ ...s, hp: s.hp + 1 }))}
+            onMinus={() => pushScore((s) => {
+              if (s.hp > 0) return { ...s, hp: s.hp - 1 }
+              if (s.hg > 0) return { ...s, hg: s.hg - 1 }
+              return s
+            })}
           />
 
           <div className="border-t border-gaa-border my-4" />
@@ -266,9 +316,13 @@ export default function Submit() {
           <ScoreButtons
             label={game.away_team}
             goals={score.ag} points={score.ap}
-            onGoal={() => addGoal('away')}
-            onPoint={() => addPoint('away')}
-            onMinus={() => minus('away')}
+            onGoal={() => pushScore((s) => ({ ...s, ag: s.ag + 1 }))}
+            onPoint={() => pushScore((s) => ({ ...s, ap: s.ap + 1 }))}
+            onMinus={() => pushScore((s) => {
+              if (s.ap > 0) return { ...s, ap: s.ap - 1 }
+              if (s.ag > 0) return { ...s, ag: s.ag - 1 }
+              return s
+            })}
           />
 
           {/* Period */}
@@ -292,25 +346,88 @@ export default function Submit() {
               ))}
             </div>
             {ftConfirm && (
-              <p className="text-[10px] text-gaa-text-muted text-center mt-1.5">
-                Tap FT again to confirm full time
-              </p>
+              <p className="text-[10px] text-gaa-text-muted text-center mt-1.5">Tap FT again to confirm full time</p>
             )}
           </div>
 
-          {/* Undo */}
+          {/* Cards */}
+          <div className="mb-5">
+            <p className="text-xs font-bold text-gaa-text-muted uppercase tracking-wider mb-3">Cards</p>
+            <CardButtons
+              label={game.home_team}
+              yellow={cards.home.yellow}
+              red={cards.home.red}
+              onYellow={() => pushCard((c) => ({ ...c, home: { ...c.home, yellow: c.home.yellow + 1 } }))}
+              onRed={() => pushCard((c) => ({ ...c, home: { ...c.home, red: c.home.red + 1 } }))}
+            />
+            <div className="mt-3" />
+            <CardButtons
+              label={game.away_team}
+              yellow={cards.away.yellow}
+              red={cards.away.red}
+              onYellow={() => pushCard((c) => ({ ...c, away: { ...c.away, yellow: c.away.yellow + 1 } }))}
+              onRed={() => pushCard((c) => ({ ...c, away: { ...c.away, red: c.away.red + 1 } }))}
+            />
+          </div>
+
+          {/* Undo — covers both score and card changes */}
           <button
             onClick={undo}
             disabled={!history.length}
-            className="flex items-center gap-1.5 text-xs font-bold text-gaa-text-muted disabled:opacity-30 min-h-[44px] transition-opacity"
-            aria-label="Undo last score change"
+            className="flex items-center gap-1.5 text-xs font-bold text-gaa-text-muted disabled:opacity-30 min-h-[44px] transition-opacity mb-6"
+            aria-label="Undo last change"
           >
             <Undo2 size={14} aria-hidden="true" />
             Undo last change
-            {history.length > 0 && (
-              <span className="opacity-50">({history.length})</span>
-            )}
+            {history.length > 0 && <span className="opacity-50">({history.length})</span>}
           </button>
+
+          {/* Live scorecard */}
+          <div className="bg-gaa-surface border border-gaa-minor/30 rounded-2xl p-4">
+            <p className="text-[10px] font-bold text-gaa-minor uppercase tracking-wider mb-3">Live Scorecard</p>
+            <div className="flex items-center gap-3">
+              {/* Home */}
+              <div className="flex-1 text-center">
+                <p className="text-[11px] font-bold text-gaa-text truncate mb-1">{game.home_team}</p>
+                <p className="font-barlow text-4xl font-black text-gaa-text tabular-nums leading-none">
+                  {score.hg}-{String(score.hp).padStart(2, '0')}
+                </p>
+                {(cards.home.yellow > 0 || cards.home.red > 0) && (
+                  <div className="flex justify-center items-center gap-2 mt-2 text-xs font-bold">
+                    {cards.home.yellow > 0 && <span className="text-yellow-400">🟨 {cards.home.yellow}</span>}
+                    {cards.home.red > 0 && <span className="text-red-400">🟥 {cards.home.red}</span>}
+                  </div>
+                )}
+              </div>
+
+              {/* Period pill */}
+              <div className="shrink-0 text-center">
+                <span className="text-[11px] font-black text-gaa-minor bg-gaa-minor/10 rounded-lg px-2.5 py-1 block">
+                  {period}
+                </span>
+              </div>
+
+              {/* Away */}
+              <div className="flex-1 text-center">
+                <p className="text-[11px] font-bold text-gaa-text truncate mb-1">{game.away_team}</p>
+                <p className="font-barlow text-4xl font-black text-gaa-text tabular-nums leading-none">
+                  {score.ag}-{String(score.ap).padStart(2, '0')}
+                </p>
+                {(cards.away.yellow > 0 || cards.away.red > 0) && (
+                  <div className="flex justify-center items-center gap-2 mt-2 text-xs font-bold">
+                    {cards.away.yellow > 0 && <span className="text-yellow-400">🟨 {cards.away.yellow}</span>}
+                    {cards.away.red > 0 && <span className="text-red-400">🟥 {cards.away.red}</span>}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {lastSaved && (
+              <p className="text-[10px] text-gaa-text-muted text-center mt-3">
+                Last submitted {fmtTime(lastSaved)}
+              </p>
+            )}
+          </div>
         </>
       )}
     </div>

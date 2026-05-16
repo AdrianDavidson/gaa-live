@@ -1,9 +1,14 @@
-import { useAuth, UserButton, SignInButton } from '@clerk/react'
+import { useAuth, useUser, UserButton, SignInButton } from '@clerk/react'
+import { Link } from 'react-router-dom'
 import { useClubTheme } from '../../hooks/useClubTheme'
 
 export default function Header() {
   const { isSignedIn } = useAuth()
+  const { user } = useUser()
   const theme = useClubTheme()
+
+  const isPro   = user?.publicMetadata?.role === 'pro'
+  const isAdmin = user?.publicMetadata?.role === 'admin'
 
   return (
     <header
@@ -21,8 +26,17 @@ export default function Header() {
         )}
         <span className="font-barlow text-2xl font-black tracking-tight text-gaa-text">Cork Minor</span>
       </div>
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2">
         <span className="text-xs font-semibold text-gaa-text-muted">Hurling</span>
+        {isSignedIn && (isPro || isAdmin) && (
+          <Link
+            to="/submit"
+            className="text-xs font-black bg-gaa-minor text-white rounded-lg px-3 py-1.5 transition-opacity active:opacity-75"
+            aria-label="Open score entry"
+          >
+            Score Entry
+          </Link>
+        )}
         {isSignedIn
           ? <UserButton afterSignOutUrl="/" />
           : <SignInButton mode="modal">
