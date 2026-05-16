@@ -29,7 +29,7 @@ function Toast({ toast }) {
   )
 }
 
-// One row: type label + count on the left, − in the middle, big + button on the right
+// One row: type label + count on the left, big + button in the middle, − on the right
 function ScoreRow({ type, value, addColor, badge, onAdd, onMinus }) {
   return (
     <div className="flex items-center gap-2 mb-2">
@@ -38,14 +38,6 @@ function ScoreRow({ type, value, addColor, badge, onAdd, onMinus }) {
         <p className="font-barlow text-2xl font-black text-gaa-text tabular-nums leading-none">{value}</p>
       </div>
       <button
-        onClick={onMinus}
-        disabled={value === 0}
-        className="w-12 h-12 rounded-xl bg-gaa-surface-raised border border-gaa-border text-gaa-text text-2xl font-black shrink-0 disabled:opacity-20 transition-opacity active:opacity-60"
-        aria-label={`Remove ${type}`}
-      >
-        −
-      </button>
-      <button
         onClick={onAdd}
         className="flex-1 h-12 rounded-xl font-black text-white flex flex-col items-center justify-center gap-0.5 transition-opacity active:opacity-70"
         style={{ backgroundColor: addColor }}
@@ -53,6 +45,14 @@ function ScoreRow({ type, value, addColor, badge, onAdd, onMinus }) {
       >
         <span className="text-[10px] uppercase font-bold opacity-80">+ {type}</span>
         <span className="text-sm leading-none">{badge}</span>
+      </button>
+      <button
+        onClick={onMinus}
+        disabled={value === 0}
+        className="w-12 h-12 rounded-xl bg-gaa-surface-raised border border-gaa-border text-gaa-text text-2xl font-black shrink-0 disabled:opacity-20 transition-opacity active:opacity-60"
+        aria-label={`Remove ${type}`}
+      >
+        −
       </button>
     </div>
   )
@@ -73,7 +73,7 @@ function ScoreButtons({ label, goals, points, onGoal, onPoint, onMinusGoal, onMi
   )
 }
 
-// One row per card type: type label + count, − button, + button
+// One row per card type: type label + count, + button, − button
 function CardRow({ type, count, bgColor, textColor, onAdd, onMinus }) {
   return (
     <div className="flex items-center gap-2 mb-2">
@@ -82,20 +82,20 @@ function CardRow({ type, count, bgColor, textColor, onAdd, onMinus }) {
         <p className="font-barlow text-2xl font-black text-gaa-text tabular-nums leading-none">{count}</p>
       </div>
       <button
-        onClick={onMinus}
-        disabled={count === 0}
-        className="w-12 h-12 rounded-xl bg-gaa-surface-raised border border-gaa-border text-gaa-text text-2xl font-black shrink-0 disabled:opacity-20 transition-opacity active:opacity-60"
-        aria-label={`Remove ${type} card`}
-      >
-        −
-      </button>
-      <button
         onClick={onAdd}
         className="flex-1 h-12 rounded-xl font-black text-sm transition-opacity active:opacity-70 flex items-center justify-center"
         style={{ backgroundColor: bgColor, color: textColor }}
         aria-label={`Add ${type} card`}
       >
         + {type}
+      </button>
+      <button
+        onClick={onMinus}
+        disabled={count === 0}
+        className="w-12 h-12 rounded-xl bg-gaa-surface-raised border border-gaa-border text-gaa-text text-2xl font-black shrink-0 disabled:opacity-20 transition-opacity active:opacity-60"
+        aria-label={`Remove ${type} card`}
+      >
+        −
       </button>
     </div>
   )
