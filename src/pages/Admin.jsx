@@ -138,7 +138,7 @@ function CsvImportSection({ clubs, comps, getToken, onDone }) {
     if (!valid.length || importing) return
     setImporting(true)
     const token = await getToken()
-    let ok = 0, fail = 0
+    let ok = 0, skipped = 0, fail = 0
     for (const r of valid) {
       const res = await fetch('/api/admin/games', {
         method:  'POST',
@@ -152,10 +152,15 @@ function CsvImportSection({ clubs, comps, getToken, onDone }) {
           assignedProId: '',
         }),
       })
-      res.ok ? ok++ : fail++
+      if (res.ok) {
+        const body = await res.json()
+        body === null ? skipped++ : ok++
+      } else {
+        fail++
+      }
     }
     setImporting(false)
-    setResult({ ok, fail })
+    setResult({ ok, skipped, fail })
     if (ok > 0) { setCsv(''); setRows(null); onDone?.() }
   }
 
@@ -224,8 +229,9 @@ function CsvImportSection({ clubs, comps, getToken, onDone }) {
       )}
 
       {result && (
-        <p className={`text-sm text-center font-bold ${result.ok > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+        <p className={`text-sm text-center font-bold ${result.ok > 0 ? 'text-emerald-400' : result.skipped > 0 ? 'text-gaa-text-muted' : 'text-red-400'}`}>
           {result.ok > 0 && `✓ Imported ${result.ok} fixture${result.ok !== 1 ? 's' : ''}`}
+          {result.skipped > 0 && ` · ${result.skipped} already existed`}
           {result.fail > 0 && ` · ${result.fail} failed`}
         </p>
       )}

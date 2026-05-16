@@ -10,14 +10,14 @@ export default async function handler(req, res) {
     const { homeClubId, awayClubId, competitionId, venue, startTime, assignedProId } = req.body
     const { data, error } = await supabase
       .from('games')
-      .insert({
+      .upsert({
         home_club_id:    homeClubId    || null,
         away_club_id:    awayClubId    || null,
         competition_id:  competitionId || null,
         venue,
         start_time:      startTime,
         assigned_pro_id: assignedProId || null,
-      })
+      }, { onConflict: 'home_club_id,away_club_id,start_time', ignoreDuplicates: true })
       .select()
       .single()
     if (error) return res.status(500).json({ error: error.message })
