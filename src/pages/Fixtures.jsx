@@ -37,6 +37,9 @@ export default function Fixtures() {
     dateTo:   twoWeeks,
   })
 
+  const activeCompIds = new Set(allGames.map((g) => g.competition_id))
+  const activeComps   = competitions.filter((c) => activeCompIds.has(c.id))
+
   const filtered = allGames.filter((g) => {
     if (competitionFilter !== 'all' && g.competition_id !== competitionFilter) return false
     if (myClubsOnly && homeClubId) {
@@ -84,7 +87,7 @@ export default function Fixtures() {
             >
               All
             </button>
-            {competitions.map((c) => (
+            {activeComps.map((c) => (
               <button
                 key={c.id}
                 onClick={() => setCompetitionFilter(c.id)}
